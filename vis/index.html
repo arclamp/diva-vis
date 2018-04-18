@@ -1,0 +1,22 @@
+<body>
+<div id=vis></div>
+
+<script src="//unpkg.com/candela/dist/candela.min.js"></script>
+
+<script>
+  (async function () {
+    const el = document.getElementById('vis');
+    const request = await fetch('diva.json');
+    const data = await request.json();
+    const vis = new candela.components.ScatterPlot(el, {
+      data,
+      x: 'Frames',
+      // xType: 'temporal',
+      y: 'Annotation Time (/spend)',
+      color: 'Annotator',
+      width: 960,
+      height: 540
+    });
+    vis.render();
+  }());
+</script>
