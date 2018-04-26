@@ -14,6 +14,9 @@ async function getData () {
 
 function process (data) {
   data.forEach(d => {
+    d['Audit Time (/estimate)'] /= 3600;
+    d['Annotation Time (/spend)'] /= 3600;
+
     d['Audit Burden'] = d['Audit Time (/estimate)'] / d['Annotation Time (/spend)'];
     d['Annotation Speed'] = d['Frames'] / d['Annotation Time (/spend)'];
     d['Audit Speed'] = d['Frames'] / d['Audit Time (/estimate)'];
@@ -113,10 +116,10 @@ function distributionPlot(id, origData, distField, color) {
 (async function () {
   let data = await getData();
 
+  process(data);
+
   scatterPlot('vis1', data, 'Frames', 'Annotation Time (/spend)', 'Annotator');
   scatterPlot('vis2', data, 'Annotation Time (/spend)', 'Audit Time (/estimate)', 'Annotator');
-
-  process(data);
 
   scatterPlot('vis3', data, 'Annotation Time (/spend)', 'Audit Burden', 'Annotator');
   scatterPlot('vis4', data, 'Frames', 'Annotation Speed', 'Annotator');
