@@ -55,6 +55,21 @@ function derived (data) {
   return table;
 }
 
+let table = {};
+let dlLink = document.createElement('a');
+
+function register (id, vis) {
+  table[id] = vis;
+}
+
+async function dump (id, filename) {
+  const vis = table[id];
+  const data = await vis.serialize('png');
+  dlLink.setAttribute('download', `${filename}.png`);
+  dlLink.setAttribute('href', data);
+  dlLink.click();
+}
+
 function scatterPlot(id, data, x, y, color) {
   let vis = new candela.components.ScatterPlot(newDiv(id), {
     data,
@@ -65,6 +80,7 @@ function scatterPlot(id, data, x, y, color) {
     height: 540
   });
   vis.render();
+  register(id, vis);
   return vis;
 }
 
@@ -78,6 +94,7 @@ function barChart(id, data, x, y, color) {
     height: 540
   });
   vis.render();
+  register(id, vis);
   return vis;
 }
 
