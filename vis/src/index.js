@@ -16,6 +16,7 @@ function process (data) {
   data.forEach(d => {
     d['Audit Burden'] = d['Audit Time (/estimate)'] / d['Annotation Time (/spend)'];
     d['Annotation Speed'] = d['Frames'] / d['Annotation Time (/spend)'];
+    d['Audit Speed'] = d['Frames'] / d['Audit Time (/estimate)'];
   });
 }
 
@@ -80,6 +81,18 @@ function barChart(id, data, x, y, color) {
   return vis;
 }
 
+function distributionPlot(id, origData, distField, color) {
+  // Make a copy of the data and sort it by the chosen field.
+  let data = origData.map(x => Object.assign({}, x));
+  data.sort((a, b) => a[distField] - b[distField]);
+
+  // Adjoin an index field now that the data is sorted.
+  data = data.map((d, i) => Object.assign(d, {index: i}));
+
+  // Now create a scatter plot based on this modified dataset.
+  return scatterPlot(id, data, 'index', distField, color);
+}
+
 (async function () {
   let data = await getData();
 
@@ -96,4 +109,9 @@ function barChart(id, data, x, y, color) {
 
   barChart('vis5', der, 'Annotator', 'Average Annotation Time', 'Annotator');
   barChart('vis6', der, 'Annotator', 'Average Annotation Speed', 'Annotator');
+
+  distributionPlot('vis7', data, 'Annotation Time (/spend)', 'Annotator');
+  distributionPlot('vis8', data, 'Audit Time (/estimate)', 'Auditor');
+  distributionPlot('vis9', data, 'Annotation Speed', 'Annotator');
+  distributionPlot('vis10', data, 'Audit Speed', 'Auditor');
 }());
