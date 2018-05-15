@@ -4,8 +4,8 @@
   "description": "Vis application testbed",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "build": "webpack --mode development"
+    "build": "webpack --mode development",
+    "start": "http-server dist"
   },
   "keywords": [],
   "author": "Roni Choudhury",
@@ -15,12 +15,16 @@
       "@babel/preset-env"
     ]
   },
+  "dependencies": {
+    "@candela/vega": "^0.21.0"
+  },
   "devDependencies": {
     "@babel/core": "^7.0.0-beta.44",
     "@babel/preset-env": "^7.0.0-beta.44",
     "@babel/register": "^7.0.0-beta.44",
     "babel-loader": "^8.0.0-beta.2",
     "html-webpack-plugin": "^3.2.0",
+    "http-server": "^0.11.1",
     "webpack": "^4.6.0",
     "webpack-cli": "^2.0.14"
   }

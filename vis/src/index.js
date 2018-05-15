@@ -1,15 +1,12 @@
+import { BarChart, ScatterPlot } from '@candela/vega';
+import data from './diva.json';
+
 function newDiv (id) {
   const div = document.createElement('div')
   div.setAttribute('id', id);
 
   document.body.appendChild(div);
   return div;
-}
-
-async function getData () {
-  console.log('hi');
-  const req = await fetch('diva.json');
-  return req.json();
 }
 
 function process (data) {
@@ -74,7 +71,7 @@ async function dump (id, filename) {
 }
 
 function scatterPlot(id, data, x, y, color) {
-  let vis = new candela.components.ScatterPlot(newDiv(id), {
+  let vis = new ScatterPlot(newDiv(id), {
     data,
     x,
     y,
@@ -88,7 +85,7 @@ function scatterPlot(id, data, x, y, color) {
 }
 
 function barChart(id, data, x, y, color) {
-  let vis = new candela.components.BarChart(newDiv(id), {
+  let vis = new BarChart(newDiv(id), {
     data,
     x,
     y,
@@ -114,8 +111,7 @@ function distributionPlot(id, origData, distField, color) {
 }
 
 (async function () {
-  let data = await getData();
-
+  console.log('data', data);
   process(data);
 
   scatterPlot('vis1', data, 'Frames', 'Annotation Time (/spend)', 'Annotator');
@@ -125,7 +121,7 @@ function distributionPlot(id, origData, distField, color) {
   scatterPlot('vis4', data, 'Frames', 'Annotation Speed', 'Annotator');
 
   const der = derived(data);
-  console.log(der);
+  console.log('derived', der);
 
   barChart('vis5', der, 'Annotator', 'Average Annotation Time', 'Annotator');
   barChart('vis6', der, 'Annotator', 'Average Annotation Speed', 'Annotator');
