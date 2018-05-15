@@ -50,11 +50,14 @@ def prepare(row):
     # Convert the ID to an int.
     stripped[0] = int(stripped[0])
 
-    # Convert project name, status, annotator, and auditor to strings.
+    # Convert project name, status, annotator, auditor, scene ID, and clip ID to
+    # strings.
     stripped[1] = get_string(stripped[1])
     stripped[2] = get_string(stripped[2])
     stripped[3] = get_string(stripped[3])
     stripped[5] = get_string(stripped[5])
+    stripped[11] = get_string(stripped[11])
+    stripped[12] = get_string(stripped[12])
 
     # Convert "annotation complete date" to a date object.
     stripped[4] = get_date(stripped[4])
@@ -87,8 +90,9 @@ def annotation_info(stream):
     if headers[0].startswith('#'):
         headers[0] = headers[0][1:]
 
-    # Strip space padding from header names.
-    headers = map(lambda x: x.strip(), headers)
+    # Strip space padding from header names, and dump any "blank" headers (i.e.,
+    # those following a terminating delimiter)
+    headers = filter(None, map(lambda x: x.strip(), headers))
 
     # Convert the remaining lines into dicts.
     dicts = map(lambda x: to_dict(prepare(x), headers), reader)
