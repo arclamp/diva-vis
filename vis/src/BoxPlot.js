@@ -147,7 +147,7 @@ export class BoxPlot extends VisComponent {
       .rangeRound([this.height, 0])
       .domain([0, 10]);
 
-    const g = this.svg.append('g')
+    let g = this.svg.append('g')
       .attr('transform', `translate(${this.margin.left},${this.margin.top})`);
 
     g.append('g')
@@ -174,6 +174,49 @@ export class BoxPlot extends VisComponent {
       .append('g')
       .merge(plots);
 
-    plots.each(d => console.log('data', d));
+    g = plots.append('g');
+    g.append('rect')
+      .attr('x', d => x(d.group) + 0.5 * 0.75 * x.bandwidth())
+      .attr('y', d => y(d.q3))
+      .attr('width', 0.25 * x.bandwidth())
+      .attr('height', d => Math.abs(y(d.q3) - y(d.med)))
+      .style('fill', 'steelblue')
+      .style('stroke', 'black');
+
+    g.append('rect')
+      .attr('x', d => x(d.group) + 0.5 * 0.75 * x.bandwidth())
+      .attr('y', d => y(d.med))
+      .attr('width', 0.25 * x.bandwidth())
+      .attr('height', d => Math.abs(y(d.med) - y(d.q1)))
+      .style('fill', 'steelblue')
+      .style('stroke', 'black');
+
+    g.append('line')
+      .attr('x1', d => x(d.group) + 0.5 * x.bandwidth())
+      .attr('x2', d => x(d.group) + 0.5 * x.bandwidth())
+      .attr('y1', d => y(d.lowWhisker))
+      .attr('y2', d => y(d.q1))
+      .style('stroke', 'black');
+
+    g.append('line')
+      .attr('x1', d => x(d.group) + 0.5 * x.bandwidth())
+      .attr('x2', d => x(d.group) + 0.5 * x.bandwidth())
+      .attr('y1', d => y(d.q3))
+      .attr('y2', d => y(d.highWhisker))
+      .style('stroke', 'black');
+
+    g.append('g')
+      .selectAll('.outlier')
+      .data(d => d.outliers.map(o => ({
+        outlier: o,
+        group: d.group
+      })))
+      .enter()
+      .append('circle')
+      .attr('cx', d => x(d.group) + 0.5 * x.bandwidth())
+      .attr('cy', d => y(d.outlier))
+      .attr('r', 2)
+      .style('fill', 'white')
+      .style('stroke', 'black');
   }
 }
