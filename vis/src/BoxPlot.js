@@ -116,6 +116,8 @@ export class BoxPlot extends VisComponent {
   constructor (el, options) {
     super(el);
 
+    this.field = options.field;
+    this.splitter = options.splitter;
     this.boxplotdata = boxplotPrep(options.data, options.splitter, options.field);
 
     console.log(this.boxplotdata);
@@ -123,7 +125,7 @@ export class BoxPlot extends VisComponent {
     this.margin = {
       top: 20,
       right: 20,
-      bottom: 30,
+      bottom: 40,
       left: 40
     };
     const width = 960;
@@ -154,18 +156,25 @@ export class BoxPlot extends VisComponent {
       .classed('axis', true)
       .classed('x-axis', true)
       .attr('transform', `translate(0,${this.height})`)
-      .call(axisBottom(x));
+      .call(axisBottom(x))
+      .append('text')
+      // .attr('transform', `translate(${this.width / 2},${this.height/2})`)
+      .attr('transform', `translate(${this.width / 2},${this.margin.bottom - 10})`)
+      .attr('text-anchor', 'middle')
+      .text(this.splitter)
+      .style('font-family', 'sans-serif')
+      .style('stroke', 'black');
 
     g.append('g')
       .classed('axis', true)
       .classed('y-axis', true)
       .call(axisLeft(y).ticks(10))
       .append('text')
-      .attr('transform', 'rotate(-90)')
-      .attr('y', 6)
-      .attr('dy', '0.71em')
-      .attr('text-nnchor', 'end')
-      .attr('text', 'placeholder');
+      .attr('transform', `translate(${-this.margin.left + 10},${this.height/2}) rotate(-90)`)
+      .attr('text-anchor', 'middle')
+      .text(this.field)
+      .style('font-family', 'sans-serif')
+      .style('stroke', 'black');
 
     let plots = g.selectAll('.boxplot')
       .data(this.boxplotdata);
