@@ -1,5 +1,6 @@
 import { BarChart, ScatterPlot } from '@candela/vega';
 import data from './diva.json';
+import { BoxPlot } from './BoxPlot';
 
 function newDiv (id) {
   const div = document.createElement('div')
@@ -114,20 +115,26 @@ function distributionPlot(id, origData, distField, color) {
   console.log('data', data);
   process(data);
 
-  scatterPlot('vis1', data, 'Frames', 'Annotation Time (/spend)', 'Annotator');
-  scatterPlot('vis2', data, 'Annotation Time (/spend)', 'Audit Time (/estimate)', 'Annotator');
+  let vis = new BoxPlot(document.body, {
+    data,
+    splitter: 'Annotator',
+    field: 'Audit Time (/estimate)'
+  });
 
-  scatterPlot('vis3', data, 'Annotation Time (/spend)', 'Audit Burden', 'Annotator');
-  scatterPlot('vis4', data, 'Frames', 'Annotation Speed', 'Annotator');
+  // scatterPlot('vis1', data, 'Frames', 'Annotation Time (/spend)', 'Annotator');
+  // scatterPlot('vis2', data, 'Annotation Time (/spend)', 'Audit Time (/estimate)', 'Annotator');
 
-  const der = derived(data);
-  console.log('derived', der);
+  // scatterPlot('vis3', data, 'Annotation Time (/spend)', 'Audit Burden', 'Annotator');
+  // scatterPlot('vis4', data, 'Frames', 'Annotation Speed', 'Annotator');
 
-  barChart('vis5', der, 'Annotator', 'Average Annotation Time', 'Annotator');
-  barChart('vis6', der, 'Annotator', 'Average Annotation Speed', 'Annotator');
+  // const der = derived(data);
+  // console.log('derived', der);
 
-  distributionPlot('vis7', data, 'Annotation Time (/spend)', 'Annotator');
-  distributionPlot('vis8', data, 'Audit Time (/estimate)', 'Auditor');
-  distributionPlot('vis9', data, 'Annotation Speed', 'Annotator');
-  distributionPlot('vis10', data, 'Audit Speed', 'Auditor');
+  // barChart('vis5', der, 'Annotator', 'Average Annotation Time', 'Annotator');
+  // barChart('vis6', der, 'Annotator', 'Average Annotation Speed', 'Annotator');
+
+  // distributionPlot('vis7', data, 'Annotation Time (/spend)', 'Annotator');
+  // distributionPlot('vis8', data, 'Audit Time (/estimate)', 'Auditor');
+  // distributionPlot('vis9', data, 'Annotation Speed', 'Annotator');
+  // distributionPlot('vis10', data, 'Audit Speed', 'Auditor');
 }());
