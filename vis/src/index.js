@@ -112,7 +112,7 @@ function distributionPlot(id, origData, distField, color) {
 }
 
 (async function () {
-  console.log('data', data);
+  // console.log('data', data);
   process(data);
 
   let vis = new BoxPlot(document.body, {
@@ -120,6 +120,7 @@ function distributionPlot(id, origData, distField, color) {
     splitter: 'Annotator',
     field: 'Audit Time (/estimate)'
   });
+  vis.render();
 
   // scatterPlot('vis1', data, 'Frames', 'Annotation Time (/spend)', 'Annotator');
   // scatterPlot('vis2', data, 'Annotation Time (/spend)', 'Audit Time (/estimate)', 'Annotator');
