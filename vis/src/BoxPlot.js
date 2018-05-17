@@ -1,7 +1,8 @@
 import { VisComponent } from '@candela/core';
 import { select } from 'd3-selection';
 import { scaleBand,
-         scaleLinear } from 'd3-scale';
+         scaleLinear,
+         scaleLog } from 'd3-scale';
 import { axisBottom,
          axisLeft } from 'd3-axis';
 
@@ -86,6 +87,9 @@ function boxplotPrep (data, splitter, field) {
       }
     }
 
+    const q1Count = Math.max(vals.filter(d => d > q1 && d < med).length, 1);
+    const q3Count = Math.max(vals.filter(d => d > med && d < q3).length, 1);
+
     let minmax = [lowWhisker, highWhisker];
     if (outliers.length > 0) {
       if (outliers[0] < minmax[0]) {
@@ -101,11 +105,14 @@ function boxplotPrep (data, splitter, field) {
       group,
       lowWhisker,
       q1,
+      q1Count,
       med,
       q3,
+      q3Count,
       highWhisker,
       outliers,
-      minmax
+      minmax,
+      vals
     });
   }
 
@@ -125,6 +132,12 @@ export class BoxPlot extends VisComponent {
 
     this.field = options.field;
     this.splitter = options.splitter;
+
+    this.bodywidth = options.bodywidth || 'constant';
+    if (this.bodywidth !== 'constant' && this.bodywidth !== 'variable') {
+      throw new Error('option `bodywidth` must be either `constant` or `variable`');
+    }
+
     this.boxplotdata = boxplotPrep(options.data, options.splitter, options.field);
 
     this.margin = {
@@ -193,19 +206,27 @@ export class BoxPlot extends VisComponent {
       .append('g')
       .merge(plots);
 
+    let logScale = scaleLog()
+      .domain([1, 1000])
+      .range([0.1 * x.bandwidth(), 0.9 * x.bandwidth()]);
+
+    let constScale = d => 0.25 * x.bandwidth();
+
+    const widthScale = this.bodywidth === 'constant' ? constScale : logScale;
+
     g = plots.append('g');
     g.append('rect')
-      .attr('x', d => x(d.group) + 0.5 * 0.75 * x.bandwidth())
+      .attr('x', d => x(d.group) + 0.5 * (x.bandwidth() - widthScale(d.q3Count)))
       .attr('y', d => y(d.q3))
-      .attr('width', 0.25 * x.bandwidth())
+      .attr('width', d => widthScale(d.q3Count))
       .attr('height', d => Math.abs(y(d.q3) - y(d.med)))
       .style('fill', 'steelblue')
       .style('stroke', 'black');
 
     g.append('rect')
-      .attr('x', d => x(d.group) + 0.5 * 0.75 * x.bandwidth())
+      .attr('x', d => x(d.group) + 0.5 * (x.bandwidth() - widthScale(d.q1Count)))
       .attr('y', d => y(d.med))
-      .attr('width', 0.25 * x.bandwidth())
+      .attr('width', d => widthScale(d.q1Count))
       .attr('height', d => Math.abs(y(d.med) - y(d.q1)))
       .style('fill', 'steelblue')
       .style('stroke', 'black');

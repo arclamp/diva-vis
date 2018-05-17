@@ -108,7 +108,8 @@ function boxPlot(id, data, splitter, field) {
   let vis = new BoxPlot(newDiv(id), {
     data,
     splitter,
-    field
+    field,
+    bodywidth: 'variable'
   });
   vis.render();
   register(id, vis);
