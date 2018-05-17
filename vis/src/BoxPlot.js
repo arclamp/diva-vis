@@ -1,10 +1,12 @@
 import { VisComponent } from '@candela/core';
 import { select } from 'd3-selection';
+import 'd3-transition';
 import { scaleBand,
          scaleLinear,
          scaleLog } from 'd3-scale';
 import { axisBottom,
          axisLeft } from 'd3-axis';
+import { format } from 'd3-format';
 
 function partition (array, classifier) {
   let classes = {};
@@ -157,6 +159,20 @@ export class BoxPlot extends VisComponent {
       .attr('xmlns', 'http://www.w3.org/2000/svg')
       .attr('width', this.visWidth)
       .attr('height', this.visHeight);
+
+    this.tooltip = select(this.el)
+      .append('div')
+      .style('opacity', 0)
+      .style('position', 'absolute')
+      .style('text-align', 'center')
+      .style('width', '60px')
+      .style('height', '28px')
+      .style('padding', '2px')
+      .style('font', '12px sans-serif')
+      .style('background', 'lightgreen')
+      .style('border', '0px')
+      .style('border-radius', '8px')
+      .style('pointer-events', 'none');
   }
 
   render () {
@@ -213,6 +229,7 @@ export class BoxPlot extends VisComponent {
     let constScale = d => 0.25 * x.bandwidth();
 
     const widthScale = this.bodywidth === 'constant' ? constScale : logScale;
+    const formatter = format('.1f');
 
     g = plots.append('g');
     g.append('rect')
@@ -221,7 +238,20 @@ export class BoxPlot extends VisComponent {
       .attr('width', d => widthScale(d.q3Count))
       .attr('height', d => Math.abs(y(d.q3) - y(d.med)))
       .style('fill', 'steelblue')
-      .style('stroke', 'black');
+      .style('stroke', 'black')
+      .on('mouseover', d => {
+        this.tooltip.transition()
+          .duration(200)
+          .style('opacity', 0.9);
+        this.tooltip.html(`${d.q3Count} items`)
+          .style('left', `${event.pageX}px`)
+          .style('top', `${event.pageY - 28}px`);
+      })
+      .on('mouseout', d => {
+        this.tooltip.transition()
+          .duration(200)
+          .style('opacity', 0.0);
+      });
 
     g.append('rect')
       .attr('x', d => x(d.group) + 0.5 * (x.bandwidth() - widthScale(d.q1Count)))
@@ -229,7 +259,20 @@ export class BoxPlot extends VisComponent {
       .attr('width', d => widthScale(d.q1Count))
       .attr('height', d => Math.abs(y(d.med) - y(d.q1)))
       .style('fill', 'steelblue')
-      .style('stroke', 'black');
+      .style('stroke', 'black')
+      .on('mouseover', d => {
+        this.tooltip.transition()
+          .duration(200)
+          .style('opacity', 0.9);
+        this.tooltip.html(`${d.q1Count} items`)
+          .style('left', `${event.pageX}px`)
+          .style('top', `${event.pageY - 28}px`);
+      })
+      .on('mouseout', d => {
+        this.tooltip.transition()
+          .duration(200)
+          .style('opacity', 0.0);
+      });
 
     g.append('line')
       .attr('x1', d => x(d.group) + 0.5 * x.bandwidth())
@@ -257,7 +300,20 @@ export class BoxPlot extends VisComponent {
       .attr('cy', d => y(d.outlier))
       .attr('r', 2)
       .style('fill', 'white')
-      .style('stroke', 'black');
+      .style('stroke', 'black')
+      .on('mouseover', d => {
+        this.tooltip.transition()
+          .duration(200)
+          .style('opacity', 0.9);
+        this.tooltip.html(formatter(d.outlier))
+          .style('left', `${event.pageX}px`)
+          .style('top', `${event.pageY - 28}px`);
+      })
+      .on('mouseout', d => {
+        this.tooltip.transition()
+          .duration(200)
+          .style('opacity', 0.0);
+      });
   }
 
   serialize (format) {
