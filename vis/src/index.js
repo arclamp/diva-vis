@@ -18,6 +18,9 @@ function process (data) {
     d['Audit Burden'] = d['Audit Time (/estimate)'] / d['Annotation Time (/spend)'];
     d['Annotation Speed'] = d['Frames'] / d['Annotation Time (/spend)'];
     d['Audit Speed'] = d['Frames'] / d['Audit Time (/estimate)'];
+
+    d['Annotation Speed'] = d['Frames'] / d['Annotation Time (/spend)'];
+    d['Audit Speed'] = d['Frames'] / d['Audit Time (/estimate)'];
   });
 }
 
@@ -71,6 +74,8 @@ async function dump (id, filename) {
   dlLink.click();
 }
 
+window.dump = dump;
+
 function scatterPlot(id, data, x, y, color) {
   let vis = new ScatterPlot(newDiv(id), {
     data,
@@ -99,6 +104,17 @@ function barChart(id, data, x, y, color) {
   return vis;
 }
 
+function boxPlot(id, data, splitter, field) {
+  let vis = new BoxPlot(newDiv(id), {
+    data,
+    splitter,
+    field
+  });
+  vis.render();
+  register(id, vis);
+  return vis;
+}
+
 function distributionPlot(id, origData, distField, color) {
   // Make a copy of the data and sort it by the chosen field.
   let data = origData.map(x => Object.assign({}, x));
@@ -111,31 +127,26 @@ function distributionPlot(id, origData, distField, color) {
   return scatterPlot(id, data, 'index', distField, color);
 }
 
-(async function () {
-  // console.log('data', data);
-  process(data);
+process(data);
 
-  let vis = new BoxPlot(document.body, {
-    data,
-    splitter: 'Annotator',
-    field: 'Audit Time (/estimate)'
-  });
-  vis.render();
+// scatterPlot('vis1', data, 'Frames', 'Annotation Time (/spend)', 'Annotator');
+// scatterPlot('vis2', data, 'Annotation Time (/spend)', 'Audit Time (/estimate)', 'Annotator');
 
-  // scatterPlot('vis1', data, 'Frames', 'Annotation Time (/spend)', 'Annotator');
-  // scatterPlot('vis2', data, 'Annotation Time (/spend)', 'Audit Time (/estimate)', 'Annotator');
+// scatterPlot('vis3', data, 'Annotation Time (/spend)', 'Audit Burden', 'Annotator');
+// scatterPlot('vis4', data, 'Frames', 'Annotation Speed', 'Annotator');
 
-  // scatterPlot('vis3', data, 'Annotation Time (/spend)', 'Audit Burden', 'Annotator');
-  // scatterPlot('vis4', data, 'Frames', 'Annotation Speed', 'Annotator');
+// const der = derived(data);
+// console.log('derived', der);
 
-  // const der = derived(data);
-  // console.log('derived', der);
+// barChart('vis5', der, 'Annotator', 'Average Annotation Time', 'Annotator');
+// barChart('vis6', der, 'Annotator', 'Average Annotation Speed', 'Annotator');
 
-  // barChart('vis5', der, 'Annotator', 'Average Annotation Time', 'Annotator');
-  // barChart('vis6', der, 'Annotator', 'Average Annotation Speed', 'Annotator');
+// distributionPlot('vis7', data, 'Annotation Time (/spend)', 'Annotator');
+// distributionPlot('vis8', data, 'Audit Time (/estimate)', 'Auditor');
+// distributionPlot('vis9', data, 'Annotation Speed', 'Annotator');
+// distributionPlot('vis10', data, 'Audit Speed', 'Auditor');
 
-  // distributionPlot('vis7', data, 'Annotation Time (/spend)', 'Annotator');
-  // distributionPlot('vis8', data, 'Audit Time (/estimate)', 'Auditor');
-  // distributionPlot('vis9', data, 'Annotation Speed', 'Annotator');
-  // distributionPlot('vis10', data, 'Audit Speed', 'Auditor');
-}());
+boxPlot('vis11', data, 'Annotator', 'Annotation Speed');
+boxPlot('vis12', data, 'Auditor', 'Audit Speed');
+boxPlot('vis13', data, 'Scene ID', 'Annotation Speed');
+boxPlot('vis14', data, 'Scene ID', 'Audit Speed');

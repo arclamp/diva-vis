@@ -60,7 +60,7 @@ function boxplotPrep (data, splitter, field) {
   let boxplotData = [];
 
   for (let group in part) {
-    const vals = part[group].map(d => d[field]).sort();
+    const vals = part[group].map(d => +d[field]).sort((x, y) => x - y);
 
     const {q1, med, q3} = quartiles(vals);
 
@@ -112,6 +112,13 @@ function boxplotPrep (data, splitter, field) {
   return boxplotData;
 }
 
+function minmax(bpData) {
+  return [
+    Math.min.apply(null, bpData.map(d => d.minmax[0])),
+    Math.max.apply(null, bpData.map(d => d.minmax[1]))
+  ];
+}
+
 export class BoxPlot extends VisComponent {
   constructor (el, options) {
     super(el);
@@ -120,23 +127,23 @@ export class BoxPlot extends VisComponent {
     this.splitter = options.splitter;
     this.boxplotdata = boxplotPrep(options.data, options.splitter, options.field);
 
-    console.log(this.boxplotdata);
-
     this.margin = {
       top: 20,
       right: 20,
       bottom: 40,
-      left: 40
+      left: 60
     };
-    const width = 960;
-    const height = 540;
-    this.width = width - this.margin.left - this.margin.right;
-    this.height = height - this.margin.top - this.margin.bottom;
+    this.visWidth = 960;
+    this.visHeight = 540;
+
+    this.width = this.visWidth - this.margin.left - this.margin.right;
+    this.height = this.visHeight - this.margin.top - this.margin.bottom;
 
     this.svg = select(this.el)
       .append('svg')
-      .attr('width', width)
-      .attr('height', height);
+      .attr('xmlns', 'http://www.w3.org/2000/svg')
+      .attr('width', this.visWidth)
+      .attr('height', this.visHeight);
   }
 
   render () {
@@ -145,9 +152,12 @@ export class BoxPlot extends VisComponent {
       .padding(0.1)
       .domain(this.boxplotdata.map(d => d.group));
 
+    const [min, max] = minmax(this.boxplotdata);
+    const padding = 0.1 * (max - min);
+
     const y = scaleLinear()
       .rangeRound([this.height, 0])
-      .domain([0, 10]);
+      .domain([min - padding, max + padding]);
 
     let g = this.svg.append('g')
       .attr('transform', `translate(${this.margin.left},${this.margin.top})`);
@@ -227,5 +237,43 @@ export class BoxPlot extends VisComponent {
       .attr('r', 2)
       .style('fill', 'white')
       .style('stroke', 'black');
+  }
+
+  serialize (format) {
+    switch (format) {
+      case 'png':
+        return this.serializePNG();
+        break;
+
+      case 'svg':
+        return this.serializeSVG();
+        break;
+
+      default:
+        throw new Error(`unknown serialization format: ${format}`);
+    }
+  }
+
+  serializeSVG () {
+    return select(this.el).select('svg').node().outerHTML;
+  }
+
+  serializePNG () {
+    return new Promise((resolve, reject) => {
+      const canvas = document.createElement('canvas');
+      canvas.width = this.visWidth;
+      canvas.height = this.visHeight;
+
+      const ctx = canvas.getContext('2d');
+      const data = this.serializeSVG();
+
+      const img = new Image(this.visWidth, this.visHeight);
+      img.onload = () => {
+        ctx.drawImage(img, 0, 0);
+        resolve(canvas.toDataURL('image/png'));
+      };
+
+      img.src = `data:image/svg+xml,${encodeURIComponent(data)}`;
+    });
   }
 }
