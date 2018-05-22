@@ -74,7 +74,12 @@ async function dump (id, filename) {
   dlLink.click();
 }
 
+function dumpAll () {
+  return Promise.all(Object.keys(table).map(id => dump(id, id)));
+}
+
 window.dump = dump;
+window.dumpAll = dumpAll;
 
 function scatterPlot(id, data, x, y, color) {
   let vis = new ScatterPlot(newDiv(id), {
