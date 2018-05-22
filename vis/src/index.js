@@ -1,6 +1,7 @@
 import { BarChart, ScatterPlot } from '@candela/vega';
 import data from './diva.json';
 import { BoxPlot } from './BoxPlot';
+import { ProgressPlot } from './ProgressPlot';
 
 function newDiv (id) {
   const div = document.createElement('div')
@@ -152,7 +153,15 @@ process(data);
 // distributionPlot('vis9', data, 'Annotation Speed', 'Annotator');
 // distributionPlot('vis10', data, 'Audit Speed', 'Auditor');
 
-boxPlot('vis11', data, 'Annotator', 'Annotation Speed');
-boxPlot('vis12', data, 'Auditor', 'Audit Speed');
-boxPlot('vis13', data, 'Scene ID', 'Annotation Speed');
-boxPlot('vis14', data, 'Scene ID', 'Audit Speed');
+// boxPlot('vis11', data, 'Annotator', 'Annotation Speed');
+// boxPlot('vis12', data, 'Auditor', 'Audit Speed');
+// boxPlot('vis13', data, 'Scene ID', 'Annotation Speed');
+// boxPlot('vis14', data, 'Scene ID', 'Audit Speed');
+
+let v = new ProgressPlot(document.body, {
+  data: {
+    progress: [3, 7, 2]
+  },
+  size: 500
+});
+v.render();
