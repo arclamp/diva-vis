@@ -160,7 +160,8 @@ process(data);
 
 let v = new ProgressPlot(document.body, {
   data: {
-    progress: [3, 7, 2]
+    progress: [3, 7, 2],
+    speed: 0.6
   },
   size: 500
 });
