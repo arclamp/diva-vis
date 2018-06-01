@@ -8,17 +8,7 @@ import { axisBottom,
          axisLeft } from 'd3-axis';
 import { format } from 'd3-format';
 
-function partition (array, classifier) {
-  let classes = {};
-  array.forEach(d => {
-    let class_ = classifier(d);
-    let target = classes[class_] = classes[class_] || [];
-
-    target.push(d);
-  });
-
-  return classes;
-}
+import { partition } from './util';
 
 function median (data, low, high) {
   const size = high - low;
