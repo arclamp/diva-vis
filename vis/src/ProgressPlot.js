@@ -1,5 +1,6 @@
 import { VisComponent } from '@candela/core';
 import { select } from 'd3-selection';
+import { transition } from 'd3-transition';
 import { arc } from 'd3-shape';
 import { scaleOrdinal,
          scaleLinear } from 'd3-scale';
@@ -27,6 +28,14 @@ function computeArcData (progress) {
   return angles;
 }
 
+function pairUp (values) {
+  let pairs = [];
+  for (let i = 0; i < values.length - 1; i++) {
+    pairs.push([values[i], values[i + 1]]);
+  }
+  return pairs;
+}
+
 export class ProgressPlot extends VisComponent {
   constructor (el, options) {
     super(el);
@@ -47,28 +56,32 @@ export class ProgressPlot extends VisComponent {
 
   render () {
     const arcData = computeArcData(this.data.progress);
-
-    let arcs = [];
-    for (let i = 0; i < arcData.length - 1; i++) {
-      console.log(this.innerRadius, this.outerRadius, arcData[i], arcData[i + 1]);
-      arcs.push(arc()
-        .innerRadius(this.innerRadius)
-        .outerRadius(this.outerRadius)
-        .startAngle(arcData[i])
-        .endAngle(arcData[i + 1]));
-    }
+    const arcfunc = arc()
+      .innerRadius(this.innerRadius)
+      .outerRadius(this.outerRadius);
 
     const colormap = scaleOrdinal(schemeCategory10);
 
-    this.svg.append('g')
+    const segments = this.svg.append('g')
       .attr('transform', `translate(${this.size / 2} ${this.size / 2})`)
       .selectAll('path.progress')
-      .data(arcs.map(d => d()))
+      .data(pairUp(arcData))
       .enter()
       .append('path')
       .classed('progress', true)
-      .attr('d', d => d)
+      .attr('d', d => arcfunc({
+        startAngle: d[0],
+        endAngle: d[0]
+      }))
       .attr('fill', (d, i) => colormap(i));
+
+    segments.transition()
+      .delay((d, i) => i * 100)
+      .duration(750)
+      .attrTween('d', d => t => arcfunc({
+        startAngle: d[0],
+        endAngle: d[0] + t * (d[1] - d[0])
+      }));
 
     const dial = this.svg.append('g')
       .attr('transform', `translate(${this.size / 2} ${this.size / 2})`);
@@ -120,12 +133,17 @@ export class ProgressPlot extends VisComponent {
       .style('fill', 'black');
 
     const needleRadius = this.innerRadius - (20 / 250) * this.size;
-    needle.append('line')
+    const indicator = needle.append('line')
       .attr('x1', 0)
       .attr('y1', 0)
       .attr('x2', 0)
       .attr('y2', -needleRadius)
       .attr('stroke', 'black')
+      .attr('transform', `rotate(${rad2deg(tickScale(0))})`);
+
+    indicator.transition()
+      .delay(200)
+      .duration(750)
       .attr('transform', `rotate(${rad2deg(tickScale(this.data.speed))})`);
   }
 }
