@@ -73,9 +73,12 @@ export class ProgressPlot extends VisComponent {
     const dial = this.svg.append('g')
       .attr('transform', `translate(${this.size / 2} ${this.size / 2})`);
 
+    const dialOuterRadius = this.innerRadius - (5 / 250) * this.size;
+    const dialInnerRadius = this.innerRadius - (7 / 250) * this.size;
+
     const scale = arc()
-      .innerRadius(this.innerRadius - 5)
-      .outerRadius(this.innerRadius - 7)
+      .innerRadius(dialInnerRadius)
+      .outerRadius(dialOuterRadius)
       .startAngle(-tau / 3)
       .endAngle(tau / 3);
 
@@ -90,6 +93,7 @@ export class ProgressPlot extends VisComponent {
 
     const tickStops = [...Array(11).keys()].map(d => d / 10);
 
+    const tickInnerRadius = this.innerRadius - (12 / 250) * this.size;
     dial.append('g')
       .classed('ticks', true)
       .selectAll('line.tick')
@@ -98,9 +102,9 @@ export class ProgressPlot extends VisComponent {
       .append('line')
       .classed('tick', true)
       .attr('x1', 0)
-      .attr('y1', -(this.innerRadius - 5))
+      .attr('y1', -dialOuterRadius)
       .attr('x2', 0)
-      .attr('y2', -(this.innerRadius - 12))
+      .attr('y2', -tickInnerRadius)
       .attr('transform', d => `rotate(${rad2deg(tickScale(d))})`)
       .attr('stroke', 'black')
       .attr('stroke-width', '2px');
@@ -111,15 +115,16 @@ export class ProgressPlot extends VisComponent {
     needle.append('circle')
       .attr('cx', 0)
       .attr('cy', 0)
-      .attr('r', 4)
+      .attr('r', (4 / 250) * this.size)
       .style('stroke', 'black')
       .style('fill', 'black');
 
+    const needleRadius = this.innerRadius - (20 / 250) * this.size;
     needle.append('line')
       .attr('x1', 0)
       .attr('y1', 0)
       .attr('x2', 0)
-      .attr('y2', -(this.innerRadius - 20))
+      .attr('y2', -needleRadius)
       .attr('stroke', 'black')
       .attr('transform', `rotate(${rad2deg(tickScale(this.data.speed))})`);
   }
