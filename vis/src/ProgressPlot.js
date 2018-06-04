@@ -42,6 +42,7 @@ export class ProgressPlot extends VisComponent {
 
     this.data = options.data;
     this.size = options.size;
+    this.speedRange = options.speedRange || [0, 1];
 
     this.donutWidth = this.size / 8;
     this.outerRadius = this.size / 2 - 5;
@@ -104,10 +105,10 @@ export class ProgressPlot extends VisComponent {
       .attr('stroke', 'black');
 
     const tickScale = scaleLinear()
-      .domain([0, 1])
+      .domain(this.speedRange)
       .range([-tau / 3, tau / 3]);
 
-    const tickStops = [...Array(11).keys()].map(d => d / 10);
+    const tickStops = [...Array(11).keys()].map(d => d / 10 * (this.speedRange[1] - this.speedRange[0]) + this.speedRange[0]);
 
     const tickInnerRadius = this.innerRadius - (12 / 250) * this.size;
     dial.append('g')
