@@ -3,6 +3,8 @@ import data from './diva.json';
 import { BoxPlot } from './BoxPlot';
 import { ProgressPlot } from './ProgressPlot';
 
+import { partition } from './util';
+
 function newDiv (id) {
   const div = document.createElement('div')
   div.setAttribute('id', id);
@@ -58,6 +60,28 @@ function derived (data) {
   }
 
   return table;
+}
+
+function progress (data) {
+  const diva = data.filter(d => d.Project === 'DIVA');
+  const classes = partition(diva, d => d.Status);
+
+  console.log(classes);
+
+  const closedFrames = fieldSum(classes.closed, 'Frames');
+  const closedAnnTime = fieldSum(classes.closed, 'Annotation Time (/spend)');
+  const closedAuditTime = fieldSum(classes.closed, 'Audit Time (/estimate)');
+
+  const openedFrames = fieldSum(classes.opened, 'Frames');
+  const auditFrames = fieldSum(classes.audit, 'Frames');
+
+  return {
+    openedFrames,
+    auditFrames,
+    closedFrames,
+    closedAuditTime,
+    closedAnnTime
+  };
 }
 
 let table = {};
@@ -134,6 +158,13 @@ function distributionPlot(id, origData, distField, color) {
   return scatterPlot(id, data, 'index', distField, color);
 }
 
+function progressPlot (config) {
+  let v = new ProgressPlot(document.body.appendChild(document.createElement('div')), config);
+  v.render();
+
+  return v;
+}
+
 process(data);
 
 // scatterPlot('vis1', data, 'Frames', 'Annotation Time (/spend)', 'Annotator');
@@ -158,11 +189,19 @@ process(data);
 // boxPlot('vis13', data, 'Scene ID', 'Annotation Speed');
 // boxPlot('vis14', data, 'Scene ID', 'Audit Speed');
 
-let v = new ProgressPlot(document.body, {
+const progressData = progress(data);
+
+console.log(progressData);
+
+progressPlot({
   data: {
-    progress: [3, 7, 2],
-    speed: 0.6
+    progress: [
+      progressData.closedFrames,
+      progressData.auditFrames,
+      progressData.openedFrames
+    ],
+    speed: (progressData.closedFrames / (progressData.closedAnnTime + progressData.closedAuditTime))
   },
-  size: 500
+  speedRange: [0, 1500],
+  size: 250
 });
-v.render();
