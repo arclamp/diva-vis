@@ -73,7 +73,10 @@ export class ProgressPlot extends VisComponent {
         startAngle: d[0],
         endAngle: d[0]
       }))
-      .attr('fill', (d, i) => colormap(i));
+      .attr('fill', (d, i) => colormap(i))
+      .on('mouseover', (d, i) => {
+        console.log(this.data.progress[i]);
+      });
 
     segments.transition()
       .delay((d, i) => i * 100)
@@ -123,7 +126,10 @@ export class ProgressPlot extends VisComponent {
       .attr('stroke-width', '2px');
 
     let needle = dial.append('g')
-      .classed('needle', true);
+      .classed('needle', true)
+      .on('mouseover', () => {
+        console.log(this.data.speed);
+      });
 
     needle.append('circle')
       .attr('cx', 0)
