@@ -203,5 +203,5 @@ progressPlot({
     speed: (progressData.closedFrames / (progressData.closedAnnTime + progressData.closedAuditTime))
   },
   speedRange: [0, 1500],
-  size: 250
+  size: 500
 });

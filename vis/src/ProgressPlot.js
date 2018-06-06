@@ -5,6 +5,7 @@ import { arc } from 'd3-shape';
 import { scaleOrdinal,
          scaleLinear } from 'd3-scale';
 import { schemeCategory10 } from 'd3-scale-chromatic';
+import rough from 'roughjs';
 
 const tau = 2 * Math.PI;
 
@@ -53,6 +54,8 @@ export class ProgressPlot extends VisComponent {
       .attr('xmlns', 'http://www.w3.org/2000/svg')
       .attr('width', this.size)
       .attr('height', this.size);
+
+    this.rough = rough.svg(this.svg.node());
   }
 
   render () {
@@ -63,29 +66,73 @@ export class ProgressPlot extends VisComponent {
 
     const colormap = scaleOrdinal(schemeCategory10);
 
-    const segments = this.svg.append('g')
-      .attr('transform', `translate(${this.size / 2} ${this.size / 2})`)
-      .selectAll('path.progress')
+    const arcs = this.svg.append('g')
+      .attr('transform', `translate(${this.size / 2} ${this.size / 2})`);
+
+    const strokes = arcs.selectAll('path.progress')
       .data(pairUp(arcData))
       .enter()
       .append('path')
       .classed('progress', true)
-      .attr('d', d => arcfunc({
-        startAngle: d[0],
-        endAngle: d[0]
-      }))
-      .attr('fill', (d, i) => colormap(i))
+      .attr('d', d => {
+        let arc = arcfunc({
+          startAngle: d[0],
+          endAngle: d[0]
+        });
+        // console.log(this.rough.path(arc, {'fill': 'green'}));
+        return select(this.rough.path(arc))
+          .select('path')
+          .attr('d');
+      })
+      .attr('stroke', (d, i) => colormap(i))
+      .attr('fill', 'none')
       .on('mouseover', (d, i) => {
         console.log(this.data.progress[i]);
       });
 
-    segments.transition()
+    const fills = arcs.selectAll('path.fill')
+      .data(pairUp(arcData))
+      .enter()
+      .append('path')
+      .classed('fill', true)
+      .attr('d', (d, i) => {
+        let arc = arcfunc({
+          startAngle: d[0],
+          endAngle: d[1]
+        });
+        console.log(this.rough.path(arc, {'fill': colormap(i)}));
+        return select(this.rough.path(arc, {'fill': colormap(i)}))
+          .select('path:nth-child(2)')
+          .attr('d');
+      })
+      .attr('stroke', (d, i) => colormap(i))
+      .attr('fill', 'none');
+
+    strokes.transition()
       .delay((d, i) => i * 100)
-      .duration(750)
-      .attrTween('d', d => t => arcfunc({
-        startAngle: d[0],
-        endAngle: d[0] + t * (d[1] - d[0])
-      }));
+      .duration(3000)
+      .attrTween('d', d => t => {
+        let arc = arcfunc({
+          startAngle: d[0],
+          endAngle: d[0] + t * (d[1] - d[0])
+        });
+        return select(this.rough.path(arc, {roughness: 0.5}))
+          .select('path')
+          .attr('d');
+      });
+
+    // fills.transition()
+      // .delay((d, i) => i * 100)
+      // .duration(3000)
+      // .attrTween('d', (d, i) => t => {
+        // let arc = arcfunc({
+          // startAngle: d[0],
+          // endAngle: d[0] + t * (d[1] - d[0])
+        // });
+        // return select(this.rough.path(arc, {'fill': colormap(i), roughness: 0.5}))
+          // .select('path:nth-child(1)')
+          // .attr('d');
+      // });
 
     const dial = this.svg.append('g')
       .attr('transform', `translate(${this.size / 2} ${this.size / 2})`);
