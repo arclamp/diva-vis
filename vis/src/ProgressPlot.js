@@ -28,7 +28,7 @@ function computeArcData (progress) {
   return angles;
 }
 
-function pairUp (values) {
+export function pairUp (values) {
   let pairs = [];
   for (let i = 0; i < values.length - 1; i++) {
     pairs.push([values[i], values[i + 1]]);
