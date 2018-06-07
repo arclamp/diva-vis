@@ -100,16 +100,16 @@ export class BurndownPlot extends VisComponent {
       .enter()
       .append('line')
       .attr('x1', d => x(d[0][this.timeIndex]))
-      .attr('y1', d => y(0))
-      .attr('x2', d => x(d[1][this.timeIndex]))
-      .attr('y2', d => y(0))
+      .attr('y1', d => y(d[0][this.series]))
+      .attr('x2', d => x(d[0][this.timeIndex]))
+      .attr('y2', d => y(d[0][this.series]))
       .style('opacity', 0)
       .style('stroke', 'black');
 
     lines.transition()
       .duration(duration)
-      .delay(delay)
-      .attr('y1', d => y(d[0][this.series]))
+      .delay((d, i) => duration + delay(d, i))
+      .attr('x2', d => x(d[1][this.timeIndex]))
       .attr('y2', d => y(d[1][this.series]))
       .style('opacity', 1);
   }
