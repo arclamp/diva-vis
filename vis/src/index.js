@@ -216,14 +216,14 @@ const progressData = progress(data);
 
 burndownPlot({
   data: [
-    {t: new Date('2018-06-01'), a: 100},
-    {t: new Date('2018-06-02'), a: 90},
-    {t: new Date('2018-06-03'), a: 90},
-    {t: new Date('2018-06-04'), a: 84},
-    {t: new Date('2018-06-05'), a: 38},
-    {t: new Date('2018-06-06'), a: 30}
+    {t: new Date('2018-06-01'), a: 100, b: 51},
+    {t: new Date('2018-06-02'), a: 90, b: 41},
+    {t: new Date('2018-06-03'), a: 90, b: 37},
+    {t: new Date('2018-06-04'), a: 84, b: 32},
+    {t: new Date('2018-06-05'), a: 38, b: 31},
+    {t: new Date('2018-06-06'), a: 30, b: 22}
   ],
   timeIndex: 't',
-  series: 'a',
+  series: ['a', 'b'],
   finishDate: new Date('2018-06-10')
 });
