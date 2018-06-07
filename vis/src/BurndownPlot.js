@@ -1,5 +1,5 @@
 import { VisComponent } from '@candela/core';
-import { select } from 'd3-selection';
+import { select, event } from 'd3-selection';
 import { axisLeft, axisBottom } from 'd3-axis';
 import { scaleTime, scaleLinear, scaleOrdinal } from 'd3-scale';
 import { timeFormat } from 'd3-time-format';
@@ -76,6 +76,7 @@ export class BurndownPlot extends VisComponent {
       .range([this.height, 0]);
 
     const g = this.svg.append('g')
+      .classed('vis', true)
       .attr('transform', `translate(${this.margin.left},${this.margin.top})`);
 
     g.append('g')
@@ -89,13 +90,35 @@ export class BurndownPlot extends VisComponent {
       .classed('y-axis', true)
       .call(axisLeft(y));
 
+    const dr = g.append('g')
+      .classed('data-rectangle', true)
+      .style('pointer-events', 'all');
+
+    let crosshair = dr.append('g')
+      .classed('crosshair', true);
+    crosshair.append('line')
+      .classed('crosshair-x', true)
+      .style('opacity', 0)
+      .style('stroke', 'lightgray')
+      .attr('x1', x.range()[0])
+      .attr('x2', x.range()[1]);
+    crosshair.append('line')
+      .classed('crosshair-y', true)
+      .style('opacity', 0)
+      .style('stroke', 'lightgray')
+      .attr('y1', y.range()[0])
+      .attr('y2', y.range()[1]);
+
     const colormap = scaleOrdinal(schemeSet1);
 
     const populate = (series) => {
-      console.log('series', series);
       const seriesColor = colormap(series);
 
-      let dots = g.append('g')
+      let me = dr.append('g')
+        .classed('series', true);
+
+      let dots = me.append('g')
+        .classed('dots', true)
         .selectAll('circle')
         .data(this.data)
         .enter()
@@ -113,7 +136,8 @@ export class BurndownPlot extends VisComponent {
         .delay(delay)
         .attr('cy', d => y(d[series]));
 
-      let lines = g.append('g')
+      let lines = me.append('g')
+        .classed('lines', true)
         .selectAll('line')
         .data(pairUp(this.data))
         .enter()
@@ -134,7 +158,7 @@ export class BurndownPlot extends VisComponent {
 
       const lastX1 = x(this.data[this.data.length - 1][this.timeIndex]);
       const lastY1 = y(this.data[this.data.length - 1][series]);
-      const projection = g.append('line')
+      const projection = me.append('line')
         .classed('projection', true)
         .attr('x1', lastX1)
         .attr('y1', lastY1)
@@ -153,7 +177,7 @@ export class BurndownPlot extends VisComponent {
 
       const firstX1 = x(this.data[0][this.timeIndex]);
       const firstY1 = y(this.data[0][series]);
-      const average = g.append('line')
+      const average = me.append('line')
         .classed('average', true)
         .attr('x1', firstX1)
         .attr('y1', firstY1)
@@ -171,11 +195,37 @@ export class BurndownPlot extends VisComponent {
         .style('opacity', 0.5);
     };
 
-    g.append('g')
-      .selectAll('g')
+    dr.selectAll('g.series')
       .data(this.series)
       .enter()
-      .append('g')
       .each(populate);
+
+    dr.append('rect')
+      .classed('target', true)
+      .attr('width', this.width)
+      .attr('height', this.height)
+      .style('opacity', 0.0)
+      .on('mousemove', () => {
+        const bbox = event.srcElement.getBoundingClientRect();
+        const mouseX = event.clientX - bbox.left;
+        const mouseY = event.clientY - bbox.top;
+
+        crosshair.select('.crosshair-x')
+          .style('opacity', 1)
+          .attr('y1', mouseY)
+          .attr('y2', mouseY);
+
+        crosshair.select('.crosshair-y')
+          .style('opacity', 1)
+          .attr('x1', mouseX)
+          .attr('x2', mouseX);
+
+        console.log(x.invert(mouseX), y.invert(mouseY));
+      })
+      .on('mouseout', () => {
+        crosshair.selectAll('line')
+          .style('opacity', 0);
+      });
+
   }
 }
