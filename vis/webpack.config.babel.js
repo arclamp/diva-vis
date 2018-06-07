@@ -25,6 +25,13 @@ export default {
             ]
           }
         }
+      },
+      {
+        test: /\.pug$/,
+        exclude: /node_modules/,
+        use: {
+          loader: 'pug-loader'
+        }
       }
     ]
   },

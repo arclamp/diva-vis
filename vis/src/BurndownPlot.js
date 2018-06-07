@@ -6,6 +6,7 @@ import { timeFormat } from 'd3-time-format';
 import { schemeSet1 } from 'd3-scale-chromatic';
 
 import { pairUp } from './ProgressPlot';
+import tooltipHtml from './tooltip.pug';
 
 function computeInfo (data, series, timeIndex, finishDate) {
   // Compute the earliest and latest dates given.
@@ -35,6 +36,13 @@ function computeInfo (data, series, timeIndex, finishDate) {
   };
 }
 
+function dateString (d) {
+  const year = d.getFullYear();
+  const month = d.getMonth() + 1 < 10 ? `0${d.getMonth() + 1}` : d.getMonth() + 1;
+  const day = d.getDate() < 10 ? `0${d.getDate()}` : d.getDate();
+  return `${year}-${month}-${day}`;
+}
+
 export class BurndownPlot extends VisComponent {
   constructor (el, options) {
     super(el);
@@ -57,13 +65,31 @@ export class BurndownPlot extends VisComponent {
     this.finishDate = options.finishDate;
 
     this.info = computeInfo(this.data, this.series, this.timeIndex, this.finishDate);
-    console.log(this.info);
 
     this.svg = select(this.el)
       .append('svg')
       .attr('xmlns', 'http://www.w3.org/2000/svg')
       .attr('width', this.visWidth)
       .attr('height', this.visHeight);
+
+    this.tooltipOptions = {
+      width: 80,
+      height: 30
+    };
+
+    this.tooltip = select(this.el)
+      .append('div')
+      .style('opacity', 0)
+      .style('position', 'absolute')
+      .style('text-align', 'center')
+      .style('width', `${this.tooltipOptions.width}px`)
+      .style('height', `${this.tooltipOptions.height}px`)
+      .style('padding', '2px')
+      .style('font', '12px sans-serif')
+      .style('background', 'lightgreen')
+      .style('border', '0px')
+      .style('border-radius', '8px')
+      .style('pointer-events', 'none');
   }
 
   render () {
@@ -220,11 +246,28 @@ export class BurndownPlot extends VisComponent {
           .attr('x1', mouseX)
           .attr('x2', mouseX);
 
-        console.log(x.invert(mouseX), y.invert(mouseY));
+        const date = dateString(x.invert(mouseX));
+        const numTasks = Math.floor(y.invert(mouseY));
+
+        this.tooltip
+          .style('left', `${event.pageX + 5}px`)
+          .style('top', `${event.pageY - this.tooltipOptions.height - 9}px`)
+          .html(tooltipHtml({
+            date,
+            numTasks
+          }));
+
+        this.tooltip.transition()
+          .duration(200)
+          .style('opacity', 0.9);
       })
       .on('mouseout', () => {
         crosshair.selectAll('line')
           .style('opacity', 0);
+
+        this.tooltip.transition()
+          .duration(200)
+          .style('opacity', 0.0);
       });
 
   }
