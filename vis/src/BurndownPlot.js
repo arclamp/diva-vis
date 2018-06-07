@@ -1,8 +1,9 @@
 import { VisComponent } from '@candela/core';
 import { select } from 'd3-selection';
 import { axisLeft, axisBottom } from 'd3-axis';
-import { scaleTime, scaleLinear } from 'd3-scale';
+import { scaleTime, scaleLinear, scaleOrdinal } from 'd3-scale';
 import { timeFormat } from 'd3-time-format';
+import { schemeSet1 } from 'd3-scale-chromatic';
 
 import { pairUp } from './ProgressPlot';
 
@@ -88,8 +89,11 @@ export class BurndownPlot extends VisComponent {
       .classed('y-axis', true)
       .call(axisLeft(y));
 
+    const colormap = scaleOrdinal(schemeSet1);
+
     const populate = (series) => {
       console.log('series', series);
+      const seriesColor = colormap(series);
 
       let dots = g.append('g')
         .selectAll('circle')
@@ -98,7 +102,8 @@ export class BurndownPlot extends VisComponent {
         .append('circle')
         .attr('cx', d => x(d[this.timeIndex]))
         .attr('cy', y(0))
-        .attr('r', 2.5);
+        .attr('r', 2.5)
+        .style('fill', seriesColor);
 
       const duration = 500;
       const delay = (d, i) => 50 * i;
@@ -118,7 +123,7 @@ export class BurndownPlot extends VisComponent {
         .attr('x2', d => x(d[0][this.timeIndex]))
         .attr('y2', d => y(d[0][series]))
         .style('opacity', 0)
-        .style('stroke', 'black');
+        .style('stroke', seriesColor);
 
       lines.transition()
         .duration(duration)
@@ -137,7 +142,7 @@ export class BurndownPlot extends VisComponent {
         .attr('y2', lastY1)
         .style('stroke-dasharray', '5, 5')
         .style('opacity', 0)
-        .style('stroke', 'black');
+        .style('stroke', seriesColor);
 
       projection.transition()
         .duration(duration)
@@ -154,16 +159,16 @@ export class BurndownPlot extends VisComponent {
         .attr('y1', firstY1)
         .attr('x2', firstX1)
         .attr('y2', firstY1)
-        .style('stroke-dasharray', '5, 5')
+        .style('stroke-dasharray', '2, 2')
         .style('opacity', 0)
-        .style('stroke', 'black');
+        .style('stroke', seriesColor);
 
       average.transition()
         .duration(duration)
         .delay(2.5 * duration)
         .attr('x2', x(this.finishDate))
         .attr('y2', y(0))
-        .style('opacity', 1);
+        .style('opacity', 0.5);
     };
 
     g.append('g')
