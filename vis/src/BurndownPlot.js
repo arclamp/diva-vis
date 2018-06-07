@@ -112,5 +112,43 @@ export class BurndownPlot extends VisComponent {
       .attr('x2', d => x(d[1][this.timeIndex]))
       .attr('y2', d => y(d[1][this.series]))
       .style('opacity', 1);
+
+    const lastX1 = x(this.data[this.data.length - 1][this.timeIndex]);
+    const lastY1 = y(this.data[this.data.length - 1][this.series]);
+    const projection = g.append('line')
+      .classed('projection', true)
+      .attr('x1', lastX1)
+      .attr('y1', lastY1)
+      .attr('x2', lastX1)
+      .attr('y2', lastY1)
+      .style('stroke-dasharray', '5, 5')
+      .style('opacity', 0)
+      .style('stroke', 'black');
+
+    projection.transition()
+      .duration(duration)
+      .delay(2 * duration)
+      .attr('x2', x(this.finishDate))
+      .attr('y2', y(0))
+      .style('opacity', 1);
+
+    const firstX1 = x(this.data[0][this.timeIndex]);
+    const firstY1 = y(this.data[0][this.series]);
+    const average = g.append('line')
+      .classed('average', true)
+      .attr('x1', firstX1)
+      .attr('y1', firstY1)
+      .attr('x2', firstX1)
+      .attr('y2', firstY1)
+      .style('stroke-dasharray', '5, 5')
+      .style('opacity', 0)
+      .style('stroke', 'black');
+
+    average.transition()
+      .duration(duration)
+      .delay(2.5 * duration)
+      .attr('x2', x(this.finishDate))
+      .attr('y2', y(0))
+      .style('opacity', 1);
   }
 }
