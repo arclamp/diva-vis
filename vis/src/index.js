@@ -2,7 +2,8 @@ import { BarChart, ScatterPlot } from '@candela/vega';
 import data from './diva.json';
 import { BoxPlot } from './BoxPlot';
 import { ProgressPlot } from './ProgressPlot';
-import { BurndownPlot } from './BurndownPlot';
+import { BurndownPlot } from './BurnPlots/BurndownPlot';
+import { BurnupPlot } from './BurnPlots/BurnupPlot';
 
 import { partition } from './util';
 
@@ -173,6 +174,13 @@ function burndownPlot (config) {
   return v;
 }
 
+function burnupPlot (config) {
+  let v = new BurnupPlot(document.body.appendChild(document.createElement('div')), config);
+  v.render();
+
+  return v;
+}
+
 process(data);
 
 // scatterPlot('vis1', data, 'Frames', 'Annotation Time (/spend)', 'Annotator');
@@ -214,7 +222,7 @@ const progressData = progress(data);
   // size: 250
 // });
 
-burndownPlot({
+const burnConfig = {
   data: [
     {t: new Date('2018-06-01'), a: 100, b: 51},
     {t: new Date('2018-06-02'), a: 90, b: 41},
@@ -226,4 +234,7 @@ burndownPlot({
   timeIndex: 't',
   series: ['a', 'b'],
   finishDate: new Date('2018-06-10')
-});
+};
+
+burndownPlot(burnConfig);
+burnupPlot(burnConfig);
