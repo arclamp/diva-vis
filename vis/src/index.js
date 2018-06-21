@@ -2,6 +2,7 @@ import { BarChart, ScatterPlot } from '@candela/vega';
 import data from './diva.json';
 import { BoxPlot } from './BoxPlot';
 import { ProgressPlot } from './ProgressPlot';
+import { BurndownPlot } from './BurndownPlot';
 
 import { partition } from './util';
 
@@ -165,6 +166,13 @@ function progressPlot (config) {
   return v;
 }
 
+function burndownPlot (config) {
+  let v = new BurndownPlot(document.body.appendChild(document.createElement('div')), config);
+  v.render();
+
+  return v;
+}
+
 process(data);
 
 // scatterPlot('vis1', data, 'Frames', 'Annotation Time (/spend)', 'Annotator');
@@ -191,17 +199,31 @@ process(data);
 
 const progressData = progress(data);
 
-console.log(progressData);
+// console.log(progressData);
 
-progressPlot({
-  data: {
-    progress: [
-      progressData.closedFrames,
-      progressData.auditFrames,
-      progressData.openedFrames
-    ],
-    speed: (progressData.closedFrames / (progressData.closedAnnTime + progressData.closedAuditTime))
-  },
-  speedRange: [0, 1500],
-  size: 250
+// progressPlot({
+  // data: {
+    // progress: [
+      // progressData.closedFrames,
+      // progressData.auditFrames,
+      // progressData.openedFrames
+    // ],
+    // speed: (progressData.closedFrames / (progressData.closedAnnTime + progressData.closedAuditTime))
+  // },
+  // speedRange: [0, 1500],
+  // size: 250
+// });
+
+burndownPlot({
+  data: [
+    {t: new Date('2018-06-01'), a: 100, b: 51},
+    {t: new Date('2018-06-02'), a: 90, b: 41},
+    {t: new Date('2018-06-03'), a: 90, b: 37},
+    {t: new Date('2018-06-04'), a: 84, b: 32},
+    {t: new Date('2018-06-05'), a: 38, b: 31},
+    {t: new Date('2018-06-06'), a: 30, b: 22}
+  ],
+  timeIndex: 't',
+  series: ['a', 'b'],
+  finishDate: new Date('2018-06-10')
 });

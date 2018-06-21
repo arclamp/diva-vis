@@ -2,6 +2,7 @@ import path from 'path';
 import HtmlWebpackPlugin from 'html-webpack-plugin';
 
 export default {
+  devtool: 'cheap-module-eval-source-map',
   entry: './src/index.js',
   output: {
     path: path.resolve('dist'),
@@ -23,6 +24,13 @@ export default {
               }]
             ]
           }
+        }
+      },
+      {
+        test: /\.pug$/,
+        exclude: /node_modules/,
+        use: {
+          loader: 'pug-loader'
         }
       }
     ]
