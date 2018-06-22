@@ -30,7 +30,7 @@ export class BurndownPlot extends VisComponent {
     this.series = Array.isArray(options.series) ? options.series : [options.series];
     this.finishDate = options.finishDate;
 
-    this.info = computeInfo(this.data, this.series, this.timeIndex, this.finishDate);
+    this.info = computeInfo(this.data, this.series, this.timeIndex, this.finishDate, false);
 
     this.svg = select(this.el)
       .append('svg')

@@ -1,4 +1,4 @@
-export function computeInfo (data, series, timeIndex, finishDate) {
+export function computeInfo (data, series, timeIndex, finishDate, taskCounts) {
   // Compute the earliest and latest dates given.
   const dates = data.map(d => d[timeIndex]);
   const start = dates.reduce((a, b) => a.getTime() < b.getTime() ? a : b, dates[0]);
@@ -14,7 +14,7 @@ export function computeInfo (data, series, timeIndex, finishDate) {
     const max = Math.max.apply(null, values);
 
     mins.push(min);
-    maxes.push(max);
+    maxes.push(Math.max(max, taskCounts ? taskCounts[s] : max));
   });
 
   // Send back the min of mins, max of maxes, and the start and end dates.

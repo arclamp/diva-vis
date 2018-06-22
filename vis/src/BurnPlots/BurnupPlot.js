@@ -9,6 +9,25 @@ import { computeInfo, dateString } from './util';
 import { pairUp } from '../ProgressPlot';
 import tooltipHtml from '../tooltip.pug';
 
+function taskCounts(data, series) {
+  let counts = {};
+  series.forEach(s => {
+    counts[s] = data[0][s];
+  });
+
+  return counts;
+}
+
+function invert(data, series, counts) {
+  return data.map(d => {
+    series.forEach(s => {
+      d[s] = counts[s] - d[s];
+    });
+
+    return d;
+  });
+}
+
 export class BurnupPlot extends VisComponent {
   constructor (el, options) {
     super(el);
@@ -25,12 +44,13 @@ export class BurnupPlot extends VisComponent {
     this.width = this.visWidth - this.margin.left - this.margin.right;
     this.height = this.visHeight - this.margin.top - this.margin.bottom;
 
-    this.data = options.data;
+    this.taskCounts = taskCounts(options.data, options.series);
+    this.data = invert(options.data, options.series, this.taskCounts);
     this.timeIndex = options.timeIndex;
     this.series = Array.isArray(options.series) ? options.series : [options.series];
     this.finishDate = options.finishDate;
 
-    this.info = computeInfo(this.data, this.series, this.timeIndex, this.finishDate);
+    this.info = computeInfo(this.data, this.series, this.timeIndex, this.finishDate, this.taskCounts);
 
     this.svg = select(this.el)
       .append('svg')
@@ -164,18 +184,17 @@ export class BurnupPlot extends VisComponent {
         .duration(duration)
         .delay(2 * duration)
         .attr('x2', x(this.finishDate))
-        .attr('y2', y(0))
+        .attr('y2', y(this.taskCounts[series]))
         .style('opacity', 1);
 
       const firstX1 = x(this.data[0][this.timeIndex]);
-      const firstY1 = y(this.data[0][series]);
+      const firstY1 = y(this.taskCounts[series]);
       const average = me.append('line')
         .classed('average', true)
         .attr('x1', firstX1)
         .attr('y1', firstY1)
         .attr('x2', firstX1)
         .attr('y2', firstY1)
-        .style('stroke-dasharray', '2, 2')
         .style('opacity', 0)
         .style('stroke', seriesColor);
 
@@ -183,7 +202,6 @@ export class BurnupPlot extends VisComponent {
         .duration(duration)
         .delay(2.5 * duration)
         .attr('x2', x(this.finishDate))
-        .attr('y2', y(0))
         .style('opacity', 0.5);
     };
 
