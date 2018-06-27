@@ -14,7 +14,7 @@ export function computeInfo (data, series, timeIndex, finishDate, taskCounts) {
     const max = Math.max.apply(null, values);
 
     mins.push(min);
-    maxes.push(Math.max(max, taskCounts ? taskCounts[s] : max));
+    maxes.push(Math.max(max, taskCounts ? taskCounts[s][taskCounts[s].length - 1] : max));
   });
 
   // Send back the min of mins, max of maxes, and the start and end dates.

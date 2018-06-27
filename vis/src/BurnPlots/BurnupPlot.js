@@ -12,16 +12,58 @@ import tooltipHtml from '../tooltip.pug';
 function taskCounts(data, series) {
   let counts = {};
   series.forEach(s => {
-    counts[s] = data[0][s];
+    const countField = `${s}_count`;
+    let curCount = data[0][s];
+
+    counts[s] = [];
+
+    data.forEach(d => {
+      if (d[countField]) {
+        curCount = d[countField];
+      }
+
+      counts[s].push(curCount);
+    });
   });
 
   return counts;
 }
 
+function computeGoalPoints(data, series, timeIndex, finishDate) {
+  let points = [];
+  let last = data[0];
+
+  const countField = `${series}_count`;
+
+  data.forEach(c => {
+    points.push({
+      x: c[timeIndex],
+      y: last[countField]
+    });
+
+    if (last && last[countField] !== c[countField]) {
+      points.push({
+        x: c[timeIndex],
+        y: c[countField]
+      });
+    }
+
+    last = c;
+  });
+
+  points.push({
+    x: finishDate,
+    y: points[points.length - 1].y
+  });
+
+  return points;
+}
+
 function invert(data, series, counts) {
-  return data.map(d => {
+  return data.map((d, i) => {
     series.forEach(s => {
-      d[s] = counts[s] - d[s];
+      d[s] = counts[s][counts[s].length - 1] - d[s];
+      d[`${s}_count`] = counts[s][i];
     });
 
     return d;
@@ -184,24 +226,22 @@ export class BurnupPlot extends VisComponent {
         .duration(duration)
         .delay(2 * duration)
         .attr('x2', x(this.finishDate))
-        .attr('y2', y(this.taskCounts[series]))
+        .attr('y2', y(this.taskCounts[series][this.taskCounts[series].length - 1]))
         .style('opacity', 1);
 
-      const firstX1 = x(this.data[0][this.timeIndex]);
-      const firstY1 = y(this.taskCounts[series]);
-      const average = me.append('line')
-        .classed('average', true)
-        .attr('x1', firstX1)
-        .attr('y1', firstY1)
-        .attr('x2', firstX1)
-        .attr('y2', firstY1)
-        .style('opacity', 0)
-        .style('stroke', seriesColor);
+      const goalPoints = computeGoalPoints(this.data, series, this.timeIndex, this.finishDate);
 
-      average.transition()
-        .duration(duration)
-        .delay(2.5 * duration)
-        .attr('x2', x(this.finishDate))
+      const average = me.append('g')
+        .classed('goal', true)
+        .selectAll('line')
+        .data(pairUp(goalPoints))
+        .enter()
+        .append('line')
+        .attr('x1', d => x(d[0].x))
+        .attr('y1', d => y(d[0].y))
+        .attr('x2', d => x(d[1].x))
+        .attr('y2', d => y(d[1].y))
+        .style('stroke', seriesColor)
         .style('opacity', 0.5);
     };
 
