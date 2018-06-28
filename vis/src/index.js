@@ -4,6 +4,7 @@ import { BoxPlot } from './BoxPlot';
 import { ProgressPlot } from './ProgressPlot';
 import { BurndownPlot } from './BurnPlots/BurndownPlot';
 import { BurnupPlot } from './BurnPlots/BurnupPlot';
+import { Example } from './D3Chart/example';
 
 import { partition } from './util';
 
@@ -181,6 +182,13 @@ function burnupPlot (config) {
   return v;
 }
 
+function examplePlot (config) {
+  let v = new Example(document.body.appendChild(document.createElement('div')), config);
+  v.render();
+
+  return v;
+}
+
 process(data);
 
 // scatterPlot('vis1', data, 'Frames', 'Annotation Time (/spend)', 'Annotator');
@@ -222,6 +230,16 @@ const progressData = progress(data);
   // size: 250
 // });
 
+examplePlot({
+  width: 300,
+  height: 300,
+  margin: {
+    top: 20,
+    right: 30,
+    bottom: 40,
+    left: 50
+  }
+});
 const burnConfig = {
   data: [
     {t: new Date('2018-06-01'), a: 100 / 4, b: 51},

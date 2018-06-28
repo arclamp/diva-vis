@@ -21,8 +21,9 @@ export default {
                 targets: {
                   node: 'current'
                 }
-              }]
-            ]
+              }],
+            ],
+            plugins: ['@babel/plugin-proposal-object-rest-spread']
           }
         }
       },
