@@ -182,6 +182,13 @@ function burnupPlot (config) {
   return v;
 }
 
+function burnupPlot2 (config) {
+  let v = new BurnupPlot2(document.body.appendChild(document.createElement('div')), config);
+  v.render();
+
+  return v;
+}
+
 function examplePlot (config) {
   let v = new Example(document.body.appendChild(document.createElement('div')), config);
   v.render();
@@ -230,16 +237,6 @@ const progressData = progress(data);
   // size: 250
 // });
 
-examplePlot({
-  width: 300,
-  height: 300,
-  margin: {
-    top: 20,
-    right: 30,
-    bottom: 40,
-    left: 50
-  }
-});
 const burnConfig = {
   data: [
     {t: new Date('2018-06-01'), a: 100 / 4, b: 51},
@@ -254,5 +251,5 @@ const burnConfig = {
   finishDate: new Date('2018-06-10')
 };
 
-burndownPlot(burnConfig);
+// burndownPlot(burnConfig);
 burnupPlot(burnConfig);
