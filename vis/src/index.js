@@ -251,5 +251,5 @@ const burnConfig = {
   finishDate: new Date('2018-06-10')
 };
 
-// burndownPlot(burnConfig);
+burndownPlot(burnConfig);
 burnupPlot(burnConfig);
