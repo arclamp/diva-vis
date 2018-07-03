@@ -5,7 +5,7 @@ import { axisLeft, axisBottom } from 'd3-axis';
 import { scaleTime, scaleLinear, scaleOrdinal } from 'd3-scale';
 import { timeFormat } from 'd3-time-format';
 import { schemeSet1 } from 'd3-scale-chromatic';
-import { D3Chart } from '@candela/d3chart';
+import { D3Chart, AxisChart } from '@candela/d3chart';
 
 import { computeInfo, dateString } from './util';
 import { pairUp } from '../ProgressPlot';
@@ -75,12 +75,15 @@ function invert(data, series, counts) {
   });
 }
 
-export class BurnupPlot extends D3Chart(VisComponent) {
+export class BurnupPlot extends AxisChart(D3Chart(VisComponent)) {
   constructor (el, options) {
     super(el);
 
+    // Initialize InitSize mixin.
     this.width = 960;
     this.height = 540;
+
+    // Initialize Margin/D3Chart mixins.
     this.margin({
       top: 20,
       right: 20,
@@ -96,6 +99,14 @@ export class BurnupPlot extends D3Chart(VisComponent) {
     this.finishDate = options.finishDate;
 
     this.info = computeInfo(this.data, this.series, this.timeIndex, this.finishDate, this.taskCounts);
+
+    const margin = this.margin();
+
+    const x = scaleTime().domain([this.info.start, this.info.end]);
+    this.bottomAxis(x);
+
+    const y = scaleLinear().domain([this.info.min, this.info.max]);
+    this.leftAxis(y);
 
     // TODO: abstract this "tooltip" thing into a mixin.
     this.tooltipOptions = {
@@ -119,25 +130,9 @@ export class BurnupPlot extends D3Chart(VisComponent) {
   }
 
   render () {
-    const margin = this.margin();
-
-    // Set up axes...
-    //
-    // ...x-axis along bottom, ...
-    const x = scaleTime()
-      .domain([this.info.start, this.info.end])
-      .range([0, this.width - margin.left - margin.right]);
-
-    this.bottom.call(axisBottom(x).tickFormat(timeFormat('%Y-%m-%d')));
-
-    // ...and y-axis along left edge.
-    const y = scaleLinear()
-      .domain([this.info.min, this.info.max])
-      .range([this.height - margin.bottom - margin.top, 0]);
-
-    this.left.append('g')
-      .attr('transform', `translate(${margin.left},0)`)
-      .call(axisLeft(y));
+    // Capture the x and y scales.
+    const x = this.bottomAxis();
+    const y = this.leftAxis();
 
     // Set the data rectangle to receive mouse events.
     this.plot.style('pointer-events', 'all');
