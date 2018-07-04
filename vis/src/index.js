@@ -4,7 +4,6 @@ import { BoxPlot } from './BoxPlot';
 import { ProgressPlot } from './ProgressPlot';
 import { BurndownPlot } from './BurnPlots/BurndownPlot';
 import { BurnupPlot } from './BurnPlots/BurnupPlot';
-import { Example } from './D3Chart/example';
 
 import { partition } from './util';
 
