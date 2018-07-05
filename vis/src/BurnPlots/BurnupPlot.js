@@ -88,6 +88,7 @@ export class BurnupPlot extends Tooltip(Crosshairs(AxisChart(D3Chart(VisComponen
     });
     this.initD3Chart();
 
+    // Compute necessary data for plot.
     this.taskCounts = taskCounts(options.data, options.series);
     this.data = invert(options.data, options.series, this.taskCounts);
     this.timeIndex = options.timeIndex;
@@ -96,6 +97,7 @@ export class BurnupPlot extends Tooltip(Crosshairs(AxisChart(D3Chart(VisComponen
 
     this.info = computeInfo(this.data, this.series, this.timeIndex, this.finishDate, this.taskCounts);
 
+    // Initialize axes.
     const margin = this.margin();
 
     const x = scaleTime().domain([this.info.start, this.info.end]);
@@ -218,7 +220,6 @@ export class BurnupPlot extends Tooltip(Crosshairs(AxisChart(D3Chart(VisComponen
       const tt = this.tooltip();
       tt.style('left', `${evt.pageX + 5}px`)
         .style('top', `${evt.pageY - 39}px`)
-        .style('opacity', 1)
         .html(tooltipHtml({
           date,
           numTasks
