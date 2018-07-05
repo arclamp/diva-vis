@@ -238,17 +238,17 @@ const progressData = progress(data);
 
 const burnConfig = {
   data: [
-    {t: new Date('2018-06-01'), a: 100 / 4, b: 51},
-    {t: new Date('2018-06-02'), a: 90 / 4, b: 41},
-    {t: new Date('2018-06-03'), a: 90 / 4, b: 37, b_count: 60},
-    {t: new Date('2018-06-04'), a: 84 / 4, b: 32},
-    {t: new Date('2018-06-05'), a: 38 / 4, b: 31, b_count: 80},
-    {t: new Date('2018-06-06'), a: 30 / 4, b: 22}
+    {t: new Date('2018-06-01T00:00:00'), a: 100 / 4, b: 51},
+    {t: new Date('2018-06-02T00:00:00'), a: 90 / 4, b: 41},
+    {t: new Date('2018-06-03T00:00:00'), a: 90 / 4, b: 37, b_count: 60},
+    {t: new Date('2018-06-04T00:00:00'), a: 84 / 4, b: 32},
+    {t: new Date('2018-06-05T00:00:00'), a: 38 / 4, b: 31, b_count: 80},
+    {t: new Date('2018-06-06T00:00:00'), a: 30 / 4, b: 22}
   ],
   timeIndex: 't',
   series: ['a', 'b'],
   finishDate: new Date('2018-06-10')
 };
 
-burndownPlot(burnConfig);
+// burndownPlot(burnConfig);
 burnupPlot(burnConfig);
