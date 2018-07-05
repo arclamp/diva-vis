@@ -99,11 +99,12 @@ export class BurnupPlot extends Tooltip(Crosshairs(AxisChart(D3Chart(VisComponen
     const margin = this.margin();
 
     const x = scaleTime().domain([this.info.start, this.info.end]);
-    this.bottomAxis(x);
+    this.bottomScale(x);
     this.bottomAxis().tickFormat(timeFormat('%Y-%m-%d'));
+    this.renderBottomAxis();
 
     const y = scaleLinear().domain([this.info.min, this.info.max]);
-    this.leftAxis(y);
+    this.leftScale(y);
 
     // Initialize crosshairs.
     this.initCrosshairs();
@@ -111,8 +112,8 @@ export class BurnupPlot extends Tooltip(Crosshairs(AxisChart(D3Chart(VisComponen
 
   render () {
     // Capture the x and y scales.
-    const x = this.bottomAxis();
-    const y = this.leftAxis();
+    const x = this.bottomScale();
+    const y = this.leftScale();
 
     // Set the data rectangle to receive mouse events.
     this.plot.style('pointer-events', 'all');
@@ -211,8 +212,8 @@ export class BurnupPlot extends Tooltip(Crosshairs(AxisChart(D3Chart(VisComponen
 
     this.on('crosshairs.move', evt => {
       const mouse = this.mouseCoords();
-      const date = dateString(this.bottomAxis().invert(mouse.x));
-      const numTasks = Math.floor(this.leftAxis().invert(mouse.y));
+      const date = dateString(this.bottomScale().invert(mouse.x));
+      const numTasks = Math.floor(this.leftScale().invert(mouse.y));
 
       const tt = this.tooltip();
       tt.style('left', `${evt.pageX + 5}px`)
