@@ -107,26 +107,6 @@ export class BurnupPlot extends Tooltip(Crosshairs(AxisChart(D3Chart(VisComponen
 
     // Initialize crosshairs.
     this.initCrosshairs();
-
-    // TODO: abstract this "tooltip" thing into a mixin.
-    // this.tooltipOptions = {
-      // width: 80,
-      // height: 30
-    // };
-
-    // this.tooltip = select(this.el)
-      // .append('div')
-      // .style('opacity', 0)
-      // .style('position', 'absolute')
-      // .style('text-align', 'center')
-      // .style('width', `${this.tooltipOptions.width}px`)
-      // .style('height', `${this.tooltipOptions.height}px`)
-      // .style('padding', '2px')
-      // .style('font', '12px sans-serif')
-      // .style('background', 'lightgreen')
-      // .style('border', '0px')
-      // .style('border-radius', '8px')
-      // .style('pointer-events', 'none');
   }
 
   render () {
@@ -136,22 +116,6 @@ export class BurnupPlot extends Tooltip(Crosshairs(AxisChart(D3Chart(VisComponen
 
     // Set the data rectangle to receive mouse events.
     this.plot.style('pointer-events', 'all');
-
-    // Set up the crosshair.
-    // let crosshair = this.plot.append('g')
-      // .classed('crosshair', true);
-    // crosshair.append('line')
-      // .classed('crosshair-x', true)
-      // .style('opacity', 0)
-      // .style('stroke', 'lightgray')
-      // .attr('x1', x.range()[0])
-      // .attr('x2', x.range()[1]);
-    // crosshair.append('line')
-      // .classed('crosshair-y', true)
-      // .style('opacity', 0)
-      // .style('stroke', 'lightgray')
-      // .attr('y1', y.range()[0])
-      // .attr('y2', y.range()[1]);
 
     const colormap = scaleOrdinal(schemeSet1);
 
@@ -246,13 +210,17 @@ export class BurnupPlot extends Tooltip(Crosshairs(AxisChart(D3Chart(VisComponen
       .each(populate);
 
     this.on('crosshairs.move', evt => {
+      const mouse = this.mouseCoords();
+      const date = dateString(this.bottomAxis().invert(mouse.x));
+      const numTasks = Math.floor(this.leftAxis().invert(mouse.y));
+
       const tt = this.tooltip();
       tt.style('left', `${evt.pageX + 5}px`)
         .style('top', `${evt.pageY - 39}px`)
         .style('opacity', 1)
         .html(tooltipHtml({
-          date: dateString(new Date()),
-          numTasks: 47
+          date,
+          numTasks
         }));
 
       tt.transition()
@@ -265,50 +233,6 @@ export class BurnupPlot extends Tooltip(Crosshairs(AxisChart(D3Chart(VisComponen
         .duration(200)
         .style('opacity', 0.0);
     });
-
-    // this.plot.append('rect')
-      // .classed('target', true)
-      // .attr('width', this.width)
-      // .attr('height', this.height)
-      // .style('opacity', 0.0)
-      // .on('mousemove', () => {
-        // const bbox = event.srcElement.getBoundingClientRect();
-        // const mouseX = event.clientX - bbox.left;
-        // const mouseY = event.clientY - bbox.top;
-
-        // // crosshair.select('.crosshair-x')
-          // // .style('opacity', 1)
-          // // .attr('y1', mouseY)
-          // // .attr('y2', mouseY);
-
-        // // crosshair.select('.crosshair-y')
-          // // .style('opacity', 1)
-          // // .attr('x1', mouseX)
-          // // .attr('x2', mouseX);
-
-        // const date = dateString(x.invert(mouseX));
-        // const numTasks = Math.floor(y.invert(mouseY));
-
-        // this.tooltip
-          // .style('left', `${event.pageX + 5}px`)
-          // .style('top', `${event.pageY - this.tooltipOptions.height - 9}px`)
-          // .html(tooltipHtml({
-            // date,
-            // numTasks
-          // }));
-
-        // this.tooltip.transition()
-          // .duration(200)
-          // .style('opacity', 0.9);
-      // })
-      // .on('mouseout', () => {
-        // // crosshair.selectAll('line')
-          // // .style('opacity', 0);
-
-        // this.tooltip.transition()
-          // .duration(200)
-          // .style('opacity', 0.0);
-      // });
   }
 }
 
