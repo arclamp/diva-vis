@@ -215,14 +215,14 @@ export class BurnupPlot extends Tooltip(Crosshairs(AxisChart(D3Chart(VisComponen
     this.on('crosshairs.move', evt => {
       const mouse = this.mouseCoords();
       const date = dateString(this.bottomScale().invert(mouse.x));
-      const numTasks = Math.floor(this.leftScale().invert(mouse.y));
+      const hours= Math.floor(this.leftScale().invert(mouse.y));
 
       const tt = this.tooltip();
       tt.style('left', `${evt.pageX + 5}px`)
         .style('top', `${evt.pageY - 39}px`)
         .html(tooltipHtml({
           date,
-          numTasks
+          hours
         }));
 
       tt.transition()
