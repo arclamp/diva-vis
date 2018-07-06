@@ -1,9 +1,10 @@
 import { VisComponent } from '@candela/core';
-import { select, event } from 'd3-selection';
+import { select } from 'd3-selection';
 import { axisLeft, axisBottom } from 'd3-axis';
 import { scaleTime, scaleLinear, scaleOrdinal } from 'd3-scale';
 import { timeFormat } from 'd3-time-format';
 import { schemeSet1 } from 'd3-scale-chromatic';
+import { D3Chart, AxisChart, Crosshairs, Tooltip } from '@candela/d3chart';
 
 import { computeInfo, dateString } from './util';
 import { pairUp } from '../ProgressPlot';
@@ -70,7 +71,174 @@ function invert(data, series, counts) {
   });
 }
 
-export class BurnupPlot extends VisComponent {
+export class BurnupPlot extends Tooltip(Crosshairs(AxisChart(D3Chart(VisComponent)))) {
+  constructor (el, options) {
+    super(el);
+
+    // Initialize InitSize mixin.
+    this.width = 960;
+    this.height = 540;
+
+    // Initialize Margin/D3Chart mixins.
+    this.margin({
+      top: 20,
+      right: 20,
+      bottom: 40,
+      left: 60
+    });
+    this.initD3Chart();
+
+    // Compute necessary data for plot.
+    this.taskCounts = taskCounts(options.data, options.series);
+    this.data = invert(options.data, options.series, this.taskCounts);
+    this.timeIndex = options.timeIndex;
+    this.series = Array.isArray(options.series) ? options.series : [options.series];
+    this.finishDate = options.finishDate;
+
+    this.info = computeInfo(this.data, this.series, this.timeIndex, this.finishDate, this.taskCounts);
+
+    // Initialize axes.
+    const margin = this.margin();
+
+    const x = scaleTime().domain([this.info.start, this.info.end]);
+    this.bottomScale(x);
+    this.bottomAxis().tickFormat(timeFormat('%Y-%m-%d'));
+    this.renderBottomAxis();
+
+    const y = scaleLinear().domain([this.info.min, this.info.max]);
+    this.leftScale(y);
+
+    // Initialize crosshairs.
+    this.initCrosshairs();
+  }
+
+  render () {
+    // Capture the x and y scales.
+    const x = this.bottomScale();
+    const y = this.leftScale();
+
+    // Set the data rectangle to receive mouse events.
+    this.plot.style('pointer-events', 'all');
+
+    const colormap = scaleOrdinal(schemeSet1);
+
+    const populate = (series) => {
+      const seriesColor = colormap(series);
+
+      console.log('this.plot', this.plot);
+      let me = this.plot.append('g')
+        .classed('series', true);
+
+      console.log('me', me);
+
+      let dots = me.append('g')
+        .classed('dots', true)
+        .selectAll('circle')
+        .data(this.data)
+        .enter()
+        .append('circle')
+        .attr('cx', d => x(d[this.timeIndex]))
+        .attr('cy', y(0))
+        .attr('r', 2.5)
+        .style('fill', seriesColor);
+
+      const duration = 500;
+      const delay = (d, i) => 50 * i;
+
+      console.log('dots', dots);
+
+      dots.transition()
+        .duration(duration)
+        .delay(delay)
+        .attr('cy', d => y(d[series]));
+
+      let lines = me.append('g')
+        .classed('lines', true)
+        .selectAll('line')
+        .data(pairUp(this.data))
+        .enter()
+        .append('line')
+        .attr('x1', d => x(d[0][this.timeIndex]))
+        .attr('y1', d => y(d[0][series]))
+        .attr('x2', d => x(d[0][this.timeIndex]))
+        .attr('y2', d => y(d[0][series]))
+        .style('opacity', 0)
+        .style('stroke', seriesColor);
+
+      lines.transition()
+        .duration(duration)
+        .delay((d, i) => duration + delay(d, i))
+        .attr('x2', d => x(d[1][this.timeIndex]))
+        .attr('y2', d => y(d[1][series]))
+        .style('opacity', 1);
+
+      const lastX1 = x(this.data[this.data.length - 1][this.timeIndex]);
+      const lastY1 = y(this.data[this.data.length - 1][series]);
+      const projection = me.append('line')
+        .classed('projection', true)
+        .attr('x1', lastX1)
+        .attr('y1', lastY1)
+        .attr('x2', lastX1)
+        .attr('y2', lastY1)
+        .style('stroke-dasharray', '5, 5')
+        .style('opacity', 0)
+        .style('stroke', seriesColor);
+
+      projection.transition()
+        .duration(duration)
+        .delay(2 * duration)
+        .attr('x2', x(this.finishDate))
+        .attr('y2', y(this.taskCounts[series][this.taskCounts[series].length - 1]))
+        .style('opacity', 1);
+
+      const goalPoints = computeGoalPoints(this.data, series, this.timeIndex, this.finishDate);
+
+      const average = me.append('g')
+        .classed('goal', true)
+        .selectAll('line')
+        .data(pairUp(goalPoints))
+        .enter()
+        .append('line')
+        .attr('x1', d => x(d[0].x))
+        .attr('y1', d => y(d[0].y))
+        .attr('x2', d => x(d[1].x))
+        .attr('y2', d => y(d[1].y))
+        .style('stroke', seriesColor)
+        .style('opacity', 0.5);
+    };
+
+    this.plot.selectAll('g.series')
+      .data(this.series)
+      .enter()
+      .each(populate);
+
+    this.on('crosshairs.move', evt => {
+      const mouse = this.mouseCoords();
+      const date = dateString(this.bottomScale().invert(mouse.x));
+      const numTasks = Math.floor(this.leftScale().invert(mouse.y));
+
+      const tt = this.tooltip();
+      tt.style('left', `${evt.pageX + 5}px`)
+        .style('top', `${evt.pageY - 39}px`)
+        .html(tooltipHtml({
+          date,
+          numTasks
+        }));
+
+      tt.transition()
+        .duration(200)
+        .style('opacity', 1.0);
+    });
+
+    this.on('crosshairs.out', () => {
+      this.tooltip().transition()
+        .duration(200)
+        .style('opacity', 0.0);
+    });
+  }
+}
+
+export class BurnupPlotOld extends VisComponent {
   constructor (el, options) {
     super(el);
 
