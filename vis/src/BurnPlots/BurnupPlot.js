@@ -172,28 +172,50 @@ export class BurnupPlot extends Tooltip(Crosshairs(AxisChart(D3Chart(VisComponen
         .attr('y2', d => y(d[1][series]))
         .style('opacity', 1);
 
-      const lastX1 = x(this.data[this.data.length - 1][this.timeIndex]);
-      const lastY1 = y(this.data[this.data.length - 1][series]);
+      const x2 = x(this.data[this.data.length - 1][this.timeIndex]);
+      const y2 = y(this.data[this.data.length - 1][series]);
       const projection = me.append('line')
         .classed('projection', true)
-        .attr('x1', lastX1)
-        .attr('y1', lastY1)
-        .attr('x2', lastX1)
-        .attr('y2', lastY1)
+        .attr('x1', x2)
+        .attr('y1', y2)
+        .attr('x2', x2)
+        .attr('y2', y2)
         .style('stroke-dasharray', '5, 5')
         .style('opacity', 0)
         .style('stroke', seriesColor);
 
+      const y0 = y(this.taskCounts[series][this.taskCounts[series].length - 1]);
       projection.transition()
         .duration(duration)
         .delay(2 * duration)
         .attr('x2', x(this.finishDate))
-        .attr('y2', y(this.taskCounts[series][this.taskCounts[series].length - 1]))
+        .attr('y2', y0)
+        .style('opacity', 1);
+
+      const x1 = x(this.data[0][this.timeIndex]);
+      const y1 = y(this.data[0][series]);
+
+      const average = me.append('line')
+        .classed('average', true)
+        .attr('x1', x1)
+        .attr('y1', y1)
+        .attr('x2', x1)
+        .attr('y2', y1)
+        .style('stroke-dasharray', '2, 2')
+        .style('opacity', 0)
+        .style('stroke', seriesColor);
+
+      const targetX = (y0 - y1) * (x2 - x1) / (y2 - y1) + x1;
+      average.transition()
+        .duration(duration)
+        .delay(3 * duration)
+        .attr('x2', targetX)
+        .attr('y2', y0)
         .style('opacity', 1);
 
       const goalPoints = computeGoalPoints(this.data, series, this.timeIndex, this.finishDate);
 
-      const average = me.append('g')
+      const goalline = me.append('g')
         .classed('goal', true)
         .selectAll('line')
         .data(pairUp(goalPoints))
