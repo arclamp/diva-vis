@@ -10,17 +10,16 @@ import { computeInfo, dateString } from './util';
 import { pairUp } from '../ProgressPlot';
 import tooltipHtml from '../tooltip.pug';
 
-function taskCounts(data, series) {
+function taskCounts(data, series, goal) {
   let counts = {};
   series.forEach(s => {
-    const countField = `${s}_count`;
     let curCount = data[0][s];
 
     counts[s] = [];
 
     data.forEach(d => {
-      if (d[countField]) {
-        curCount = d[countField];
+      if (d[goal]) {
+        curCount = d[goal];
       }
 
       counts[s].push(curCount);
@@ -30,26 +29,24 @@ function taskCounts(data, series) {
   return counts;
 }
 
-function computeGoalPoints(data, series, timeIndex, finishDate) {
+function computeGoalPoints(data, taskCounts, series, timeIndex, finishDate) {
   let points = [];
-  let last = data[0];
+  let last = taskCounts[series][0];
 
-  const countField = `${series}_count`;
-
-  data.forEach(c => {
+  data.forEach((c, i) => {
     points.push({
       x: c[timeIndex],
-      y: last[countField]
+      y: last
     });
 
-    if (last && last[countField] !== c[countField]) {
+    if (last !== taskCounts[series][i]) {
       points.push({
         x: c[timeIndex],
-        y: c[countField]
+        y: taskCounts[series][i]
       });
     }
 
-    last = c;
+    last = taskCounts[series][i];
   });
 
   points.push({
@@ -58,17 +55,6 @@ function computeGoalPoints(data, series, timeIndex, finishDate) {
   });
 
   return points;
-}
-
-function invert(data, series, counts) {
-  return data.map((d, i) => {
-    series.forEach(s => {
-      d[s] = counts[s][counts[s].length - 1] - d[s];
-      d[`${s}_count`] = counts[s][i];
-    });
-
-    return d;
-  });
 }
 
 export class BurnupPlot extends Tooltip(Crosshairs(AxisChart(D3Chart(VisComponent)))) {
@@ -89,10 +75,11 @@ export class BurnupPlot extends Tooltip(Crosshairs(AxisChart(D3Chart(VisComponen
     this.initD3Chart();
 
     // Compute necessary data for plot.
-    this.taskCounts = taskCounts(options.data, options.series);
-    this.data = invert(options.data, options.series, this.taskCounts);
+    this.taskCounts = taskCounts(options.data, options.series, options.goal);
+    this.data = options.data;
     this.timeIndex = options.timeIndex;
     this.series = Array.isArray(options.series) ? options.series : [options.series];
+    this.goal = options.goal;
     this.finishDate = options.finishDate;
 
     this.info = computeInfo(this.data, this.series, this.timeIndex, this.finishDate, this.taskCounts);
@@ -213,7 +200,7 @@ export class BurnupPlot extends Tooltip(Crosshairs(AxisChart(D3Chart(VisComponen
         .attr('y2', y0)
         .style('opacity', 1);
 
-      const goalPoints = computeGoalPoints(this.data, series, this.timeIndex, this.finishDate);
+      const goalPoints = computeGoalPoints(this.data, this.taskCounts, series, this.timeIndex, this.finishDate);
 
       const goalline = me.append('g')
         .classed('goal', true)
