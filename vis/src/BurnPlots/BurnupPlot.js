@@ -10,28 +10,27 @@ import { computeInfo, dateString } from './util';
 import { pairUp } from '../ProgressPlot';
 import tooltipHtml from '../tooltip.pug';
 
-function taskCounts(data, series, goal) {
-  let counts = {};
-  series.forEach(s => {
-    let curCount = data[0][s];
+function goalCount(data, goal) {
+  if (data[0][goal] === undefined) {
+    throw new Error('fatal: data does not include initial goal count');
+  }
 
-    counts[s] = [];
+  let count = [];
+  let curCount;
+  data.forEach(d => {
+    if (d[goal]) {
+      curCount = d[goal];
+    }
 
-    data.forEach(d => {
-      if (d[goal]) {
-        curCount = d[goal];
-      }
-
-      counts[s].push(curCount);
-    });
+    count.push(curCount);
   });
 
-  return counts;
+  return count;
 }
 
-function computeGoalPoints(data, taskCounts, series, timeIndex, finishDate) {
+function computeGoalPoints(data, goalCount, timeIndex, finishDate) {
   let points = [];
-  let last = taskCounts[series][0];
+  let last = goalCount[0];
 
   data.forEach((c, i) => {
     points.push({
@@ -39,14 +38,14 @@ function computeGoalPoints(data, taskCounts, series, timeIndex, finishDate) {
       y: last
     });
 
-    if (last !== taskCounts[series][i]) {
+    if (last !== goalCount[i]) {
       points.push({
         x: c[timeIndex],
-        y: taskCounts[series][i]
+        y: goalCount[i]
       });
     }
 
-    last = taskCounts[series][i];
+    last = goalCount[i];
   });
 
   points.push({
@@ -75,14 +74,14 @@ export class BurnupPlot extends Tooltip(Crosshairs(AxisChart(D3Chart(VisComponen
     this.initD3Chart();
 
     // Compute necessary data for plot.
-    this.taskCounts = taskCounts(options.data, options.series, options.goal);
+    this.goalCount = goalCount(options.data, options.goal);
     this.data = options.data;
     this.timeIndex = options.timeIndex;
     this.series = Array.isArray(options.series) ? options.series : [options.series];
     this.goal = options.goal;
     this.finishDate = options.finishDate;
 
-    this.info = computeInfo(this.data, this.series, this.timeIndex, this.finishDate, this.taskCounts);
+    this.info = computeInfo(this.data, this.series, this.timeIndex, this.finishDate, this.goalCount);
 
     // Initialize axes.
     const margin = this.margin();
@@ -171,7 +170,7 @@ export class BurnupPlot extends Tooltip(Crosshairs(AxisChart(D3Chart(VisComponen
         .style('opacity', 0)
         .style('stroke', seriesColor);
 
-      const y0 = y(this.taskCounts[series][this.taskCounts[series].length - 1]);
+      const y0 = y(this.goalCount[this.goalCount.length - 1]);
       projection.transition()
         .duration(duration)
         .delay(2 * duration)
@@ -200,21 +199,22 @@ export class BurnupPlot extends Tooltip(Crosshairs(AxisChart(D3Chart(VisComponen
         .attr('y2', y0)
         .style('opacity', 1);
 
-      const goalPoints = computeGoalPoints(this.data, this.taskCounts, series, this.timeIndex, this.finishDate);
-
-      const goalline = me.append('g')
-        .classed('goal', true)
-        .selectAll('line')
-        .data(pairUp(goalPoints))
-        .enter()
-        .append('line')
-        .attr('x1', d => x(d[0].x))
-        .attr('y1', d => y(d[0].y))
-        .attr('x2', d => x(d[1].x))
-        .attr('y2', d => y(d[1].y))
-        .style('stroke', seriesColor)
-        .style('opacity', 0.5);
     };
+
+    const goalPoints = computeGoalPoints(this.data, this.goalCount, this.timeIndex, this.finishDate);
+
+    const goalline = this.plot.append('g')
+      .classed('goal', true)
+      .selectAll('line')
+      .data(pairUp(goalPoints))
+      .enter()
+      .append('line')
+      .attr('x1', d => x(d[0].x))
+      .attr('y1', d => y(d[0].y))
+      .attr('x2', d => x(d[1].x))
+      .attr('y2', d => y(d[1].y))
+      .style('stroke', 'black')
+      .style('opacity', 0.5);
 
     this.plot.selectAll('g.series')
       .data(this.series)
