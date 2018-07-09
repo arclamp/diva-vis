@@ -68,8 +68,6 @@ function progress (data) {
   const diva = data.filter(d => d.Project === 'DIVA');
   const classes = partition(diva, d => d.Status);
 
-  console.log(classes);
-
   const closedFrames = fieldSum(classes.closed, 'Frames');
   const closedAnnTime = fieldSum(classes.closed, 'Annotation Time (/spend)');
   const closedAuditTime = fieldSum(classes.closed, 'Audit Time (/estimate)');

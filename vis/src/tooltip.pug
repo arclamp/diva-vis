@@ -1,3 +1,12 @@
 b= date
 br
-span #{hours} hours
+span #{hours.toFixed(1)} hours
+br
+br
+span #[span(style="width:1ex;background:black;color:black") xx] #{goalIntersection.toFixed(1)} hours
+br
+br
+each s in seriesIntersections
+  if s.value
+    span #[span(style=`width:1ex;background:${s.color};color:${s.color}`) xx] #{s.value.toFixed(1)} hours
+    br

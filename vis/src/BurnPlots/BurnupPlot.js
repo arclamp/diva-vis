@@ -7,6 +7,7 @@ import { schemeSet1 } from 'd3-scale-chromatic';
 import { D3Chart, AxisChart, Crosshairs, Tooltip } from '@candela/d3chart';
 
 import { computeInfo, dateString } from './util';
+import { LinearPoints, StepPoints } from '../function';
 import { pairUp } from '../ProgressPlot';
 import tooltipHtml from '../tooltip.pug';
 
@@ -73,6 +74,12 @@ export class BurnupPlot extends Tooltip(Crosshairs(AxisChart(D3Chart(VisComponen
     });
     this.initD3Chart();
 
+    this.initTooltip({
+      textAlign: 'left',
+      width: '80px',
+      height: '100px'
+    });
+
     // Compute necessary data for plot.
     this.goalCount = goalCount(options.data, options.goal);
     this.data = options.data;
@@ -111,11 +118,8 @@ export class BurnupPlot extends Tooltip(Crosshairs(AxisChart(D3Chart(VisComponen
     const populate = (series) => {
       const seriesColor = colormap(series);
 
-      console.log('this.plot', this.plot);
       let me = this.plot.append('g')
         .classed('series', true);
-
-      console.log('me', me);
 
       let dots = me.append('g')
         .classed('dots', true)
@@ -130,8 +134,6 @@ export class BurnupPlot extends Tooltip(Crosshairs(AxisChart(D3Chart(VisComponen
 
       const duration = 500;
       const delay = (d, i) => 50 * i;
-
-      console.log('dots', dots);
 
       dots.transition()
         .duration(duration)
@@ -198,7 +200,6 @@ export class BurnupPlot extends Tooltip(Crosshairs(AxisChart(D3Chart(VisComponen
         .attr('x2', targetX)
         .attr('y2', y0)
         .style('opacity', 1);
-
     };
 
     const goalPoints = computeGoalPoints(this.data, this.goalCount, this.timeIndex, this.finishDate);
@@ -214,24 +215,38 @@ export class BurnupPlot extends Tooltip(Crosshairs(AxisChart(D3Chart(VisComponen
       .attr('x2', d => x(d[1].x))
       .attr('y2', d => y(d[1].y))
       .style('stroke', 'black')
-      .style('opacity', 0.5);
+      .style('stroke-width', '1px')
+      .style('opacity', 0.8);
 
     this.plot.selectAll('g.series')
       .data(this.series)
       .enter()
       .each(populate);
 
+    let dataInterp = {};
+    this.series.forEach(s => {
+      dataInterp[s] = new LinearPoints(this.data.map(d => ({x: d[this.timeIndex], y: d[s]})), 'x', 'y');
+    });
+
+    const goalInterp = new StepPoints(goalPoints, 'x', 'y');
+
     this.on('crosshairs.move', evt => {
       const mouse = this.mouseCoords();
-      const date = dateString(this.bottomScale().invert(mouse.x));
-      const hours= Math.floor(this.leftScale().invert(mouse.y));
+      const invertX = this.bottomScale().invert(mouse.x);
+      const date = dateString(invertX);
+      const hours = this.leftScale().invert(mouse.y);
+
+      const seriesIntersections = this.series.map(s => ({color: colormap(s), value: dataInterp[s].evaluate(invertX)}));
+      const goalIntersection = goalInterp.evaluate(invertX);
 
       const tt = this.tooltip();
-      tt.style('left', `${evt.pageX + 5}px`)
+      tt.style('left', `${evt.pageX + 10}px`)
         .style('top', `${evt.pageY - 39}px`)
         .html(tooltipHtml({
           date,
-          hours
+          hours,
+          seriesIntersections,
+          goalIntersection
         }));
 
       tt.transition()
