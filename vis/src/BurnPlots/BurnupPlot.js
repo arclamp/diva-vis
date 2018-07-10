@@ -11,6 +11,26 @@ import { LinearPoints, StepPoints } from '../function';
 import { pairUp } from '../ProgressPlot';
 import tooltipHtml from '../tooltip.pug';
 
+function collectNotes (data, timeIndex) {
+  let notes = [];
+  data.forEach(d => {
+    for (let k in d) {
+      if (k.endsWith('_note')) {
+        const parts = k.split('_');
+        const series = parts.slice(0, -1).join('_');
+
+        notes.push({
+          x: d[timeIndex],
+          y: d[series],
+          note: d[k]
+        });
+      }
+    }
+  });
+
+  return notes;
+}
+
 function goalCount(data, goal) {
   if (data[0][goal] === undefined) {
     throw new Error('fatal: data does not include initial goal count');
@@ -109,9 +129,6 @@ export class BurnupPlot extends Tooltip(Crosshairs(AxisChart(D3Chart(VisComponen
     // Capture the x and y scales.
     const x = this.bottomScale();
     const y = this.leftScale();
-
-    // Set the data rectangle to receive mouse events.
-    this.plot.style('pointer-events', 'all');
 
     const colormap = scaleOrdinal(schemeSet1);
 
@@ -230,7 +247,18 @@ export class BurnupPlot extends Tooltip(Crosshairs(AxisChart(D3Chart(VisComponen
 
     const goalInterp = new StepPoints(goalPoints, 'x', 'y');
 
-    this.on('crosshairs.move', evt => {
+    this.plot.on('mousemove', () => {
+      const mouse = this.mouseCoords();
+      this.show();
+      this.update(mouse.x, mouse.y);
+
+      this.showTT();
+      this.setTTPosition(event.pageX, event.pageY);
+    });
+
+    this.target.on('mousemove.tooltip', () => {
+      const evt = window.event;
+
       const mouse = this.mouseCoords();
       const invertX = this.bottomScale().invert(mouse.x);
       const date = dateString(invertX);
@@ -240,24 +268,39 @@ export class BurnupPlot extends Tooltip(Crosshairs(AxisChart(D3Chart(VisComponen
       const goalIntersection = goalInterp.evaluate(invertX);
 
       const tt = this.tooltip();
-      tt.style('left', `${evt.pageX + 10}px`)
-        .style('top', `${evt.pageY - 39}px`)
-        .html(tooltipHtml({
+      this.setTTPosition(window.event.pageX, window.event.pageY);
+      tt.html(tooltipHtml({
           date,
           hours,
           seriesIntersections,
           goalIntersection
         }));
-
-      tt.transition()
-        .duration(200)
-        .style('opacity', 1.0);
     });
 
-    this.on('crosshairs.out', () => {
-      this.tooltip().transition()
-        .duration(200)
+    this.target.on('mouseout.tooltip', () => {
+      this.tooltip()
         .style('opacity', 0.0);
     });
+
+    const noteData = collectNotes(this.data, this.timeIndex);
+    this.plot.append('g')
+      .classed('notes', true)
+      .selectAll('circle')
+      .data(noteData)
+      .enter()
+      .append('circle')
+      .attr('cx', d => x(d.x))
+      .attr('cy', d => y(d.y))
+      .attr('r', 5)
+      .style('fill', 'gray')
+      .on('mousemove.note', d => {
+        this.tooltip().text(d.note);
+      });
+  }
+
+  setTTPosition (x, y) {
+    this.tooltip()
+      .style('left', `${x + 10}px`)
+      .style('top', `${y + 10}px`);
   }
 }
