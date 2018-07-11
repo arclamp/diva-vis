@@ -132,6 +132,8 @@ export class BurnupPlot extends Tooltip(Crosshairs(AxisChart(D3Chart(VisComponen
 
     const colormap = scaleOrdinal(schemeSet1);
 
+    const plotBounds = this.marginBounds('plot');
+
     const populate = (series) => {
       const seriesColor = colormap(series);
 
@@ -294,7 +296,14 @@ export class BurnupPlot extends Tooltip(Crosshairs(AxisChart(D3Chart(VisComponen
       .attr('r', 5)
       .style('fill', 'gray')
       .on('mousemove.note', d => {
+        this.show();
+        this.update(x(d.x), y(d.y));
+
+        this.showTT();
+        this.setTTPosition(x(d.x) + plotBounds.x + 10, y(d.y) + plotBounds.y + 10);
         this.tooltip().text(d.note);
+
+        event.stopPropagation();
       });
   }
 
