@@ -115,11 +115,13 @@ export class BurnupPlot extends Tooltip(Crosshairs(AxisChart(D3Chart(VisComponen
 
     const x = scaleTime().domain([this.info.start, this.info.end]);
     this.bottomScale(x);
+    this.bottomLabel('Date');
     this.bottomAxis().tickFormat(timeFormat('%Y-%m-%d'));
     this.renderBottomAxis();
 
     const y = scaleLinear().domain([this.info.min, this.info.max]);
     this.leftScale(y);
+    this.leftLabel('Hours');
 
     // Initialize crosshairs.
     this.initCrosshairs();
