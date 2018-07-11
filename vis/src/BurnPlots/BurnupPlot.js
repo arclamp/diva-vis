@@ -151,17 +151,12 @@ export class BurnupPlot extends Tooltip(Crosshairs(AxisChart(D3Chart(VisComponen
         .enter()
         .append('circle')
         .attr('cx', d => x(d[this.timeIndex]))
-        .attr('cy', y(0))
+        .attr('cy', d => y(d[series]))
         .attr('r', 2.5)
         .style('fill', seriesColor);
 
       const duration = 500;
       const delay = (d, i) => 50 * i;
-
-      dots.transition()
-        .duration(duration)
-        .delay(delay)
-        .attr('cy', d => y(d[series]));
 
       let lines = me.append('g')
         .classed('lines', true)
@@ -171,58 +166,39 @@ export class BurnupPlot extends Tooltip(Crosshairs(AxisChart(D3Chart(VisComponen
         .append('line')
         .attr('x1', d => x(d[0][this.timeIndex]))
         .attr('y1', d => y(d[0][series]))
-        .attr('x2', d => x(d[0][this.timeIndex]))
-        .attr('y2', d => y(d[0][series]))
-        .style('opacity', 0)
-        .style('stroke', seriesColor);
-
-      lines.transition()
-        .duration(duration)
-        .delay((d, i) => duration + delay(d, i))
         .attr('x2', d => x(d[1][this.timeIndex]))
         .attr('y2', d => y(d[1][series]))
-        .style('opacity', 1);
+        .style('opacity', 1)
+        .style('stroke', seriesColor);
 
       const x2 = x(this.data[this.data.length - 1][this.timeIndex]);
       const y2 = y(this.data[this.data.length - 1][series]);
+      const y0 = y(this.goalCount[this.goalCount.length - 1]);
       const projection = me.append('line')
         .classed('projection', true)
         .attr('x1', x2)
         .attr('y1', y2)
-        .attr('x2', x2)
-        .attr('y2', y2)
-        .style('stroke-dasharray', '5, 5')
-        .style('opacity', 0)
-        .style('stroke', seriesColor);
-
-      const y0 = y(this.goalCount[this.goalCount.length - 1]);
-      projection.transition()
-        .duration(duration)
-        .delay(2 * duration)
         .attr('x2', x(this.finishDate))
         .attr('y2', y0)
-        .style('opacity', 1);
+        .style('opacity', 1)
+        .style('stroke-dasharray', '5, 5')
+        .style('stroke', seriesColor);
 
       const avgStart = this.getAverageStart(series);
       const x1 = x(avgStart.x);
       const y1 = y(avgStart.y);
 
+      const targetX = (y0 - y1) * (x2 - x1) / (y2 - y1) + x1;
       const average = me.append('line')
         .classed('average', true)
         .attr('x1', x1)
         .attr('y1', y1)
         .attr('x2', x1)
         .attr('y2', y1)
-        .style('stroke-dasharray', '2, 2')
-        .style('opacity', 0)
-        .style('stroke', seriesColor);
-
-      const targetX = (y0 - y1) * (x2 - x1) / (y2 - y1) + x1;
-      average.transition()
-        .duration(duration)
-        .delay(3 * duration)
         .attr('x2', targetX)
         .attr('y2', y0)
+        .style('stroke-dasharray', '2, 2')
+        .style('stroke', seriesColor)
         .style('opacity', 1);
     };
 
