@@ -81,6 +81,8 @@ export class BurnupPlot extends Tooltip(Crosshairs(AxisChart(D3Chart(VisComponen
   constructor (el, options) {
     super(el);
 
+    this.averageStart = {};
+
     // Initialize InitSize mixin.
     this.width = 960;
     this.height = 540;
@@ -201,8 +203,9 @@ export class BurnupPlot extends Tooltip(Crosshairs(AxisChart(D3Chart(VisComponen
         .attr('y2', y0)
         .style('opacity', 1);
 
-      const x1 = x(this.data[0][this.timeIndex]);
-      const y1 = y(this.data[0][series]);
+      const avgStart = this.getAverageStart(series);
+      const x1 = x(avgStart.x);
+      const y1 = y(avgStart.y);
 
       const average = me.append('line')
         .classed('average', true)
@@ -313,5 +316,20 @@ export class BurnupPlot extends Tooltip(Crosshairs(AxisChart(D3Chart(VisComponen
     this.tooltip()
       .style('left', `${x + 10}px`)
       .style('top', `${y + 10}px`);
+  }
+
+  getAverageStart (s) {
+    if (!this.averageStart.hasOwnProperty(s)) {
+      this.averageStart[s] = {
+        x: this.data[0][this.timeIndex],
+        y: this.data[0][s]
+      };
+    }
+
+    return this.averageStart[s];
+  }
+
+  setAverageStart (s, {x, y}) {
+    this.averageStart[s] = {x, y};
   }
 }

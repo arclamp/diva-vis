@@ -174,6 +174,7 @@ function burndownPlot (config) {
 
 function burnupPlot (config) {
   let v = new BurnupPlot(document.body.appendChild(document.createElement('div')), config);
+  v.setAverageStart('a', {x: new Date('2018-06-02'), y: 8});
   v.render();
 
   return v;
