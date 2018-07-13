@@ -94,10 +94,9 @@ export class BurnupPlot extends Tooltip(Crosshairs(AxisChart(D3Chart(VisComponen
       bottom: 40,
       left: 60
     });
-    console.log('plot', this.margin.bounds('plot'));
     this.initD3Chart();
 
-    this.initTooltip({
+    this.tooltip.init({
       textAlign: 'left',
       width: '80px',
       height: '100px'
@@ -127,7 +126,7 @@ export class BurnupPlot extends Tooltip(Crosshairs(AxisChart(D3Chart(VisComponen
     this.leftLabel('Hours');
 
     // Initialize crosshairs.
-    this.initCrosshairs();
+    this.crosshairs.init();
   }
 
   render () {
@@ -232,18 +231,18 @@ export class BurnupPlot extends Tooltip(Crosshairs(AxisChart(D3Chart(VisComponen
     const goalInterp = new StepPoints(goalPoints, 'x', 'y');
 
     this.plot.on('mousemove', () => {
-      const mouse = this.mouseCoords();
-      this.show();
-      this.update(mouse.x, mouse.y);
+      const mouse = this.crosshairs.mouseCoords();
+      this.crosshairs.show()
+        .setPosition(mouse.x, mouse.y);
 
-      this.showTT();
-      this.setTTPosition(event.pageX, event.pageY);
+      this.tooltip.show()
+        .setPosition(event.pageX + 10, event.pageY + 10);
     });
 
-    this.target.on('mousemove.tooltip', () => {
+    this.crosshairs.target.on('mousemove.tooltip', () => {
       const evt = window.event;
 
-      const mouse = this.mouseCoords();
+      const mouse = this.crosshairs.mouseCoords();
       const invertX = this.bottomScale().invert(mouse.x);
       const date = dateString(invertX);
       const hours = this.leftScale().invert(mouse.y);
@@ -251,9 +250,8 @@ export class BurnupPlot extends Tooltip(Crosshairs(AxisChart(D3Chart(VisComponen
       const seriesIntersections = this.series.map(s => ({color: colormap(s), value: dataInterp[s].evaluate(invertX)}));
       const goalIntersection = goalInterp.evaluate(invertX);
 
-      const tt = this.tooltip();
-      this.setTTPosition(window.event.pageX, window.event.pageY);
-      tt.html(tooltipHtml({
+      this.tooltip.setPosition(window.event.pageX + 10, window.event.pageY + 10);
+      this.tooltip.tooltip.html(tooltipHtml({
           date,
           hours,
           seriesIntersections,
@@ -261,9 +259,8 @@ export class BurnupPlot extends Tooltip(Crosshairs(AxisChart(D3Chart(VisComponen
         }));
     });
 
-    this.target.on('mouseout.tooltip', () => {
-      this.tooltip()
-        .style('opacity', 0.0);
+    this.crosshairs.target.on('mouseout.tooltip', () => {
+      this.tooltip.hide();
     });
 
     const noteData = collectNotes(this.data, this.timeIndex);
@@ -278,21 +275,15 @@ export class BurnupPlot extends Tooltip(Crosshairs(AxisChart(D3Chart(VisComponen
       .attr('r', 5)
       .style('fill', 'gray')
       .on('mousemove.note', d => {
-        this.show();
-        this.update(x(d.x), y(d.y));
+        this.crosshairs.show()
+          .setPosition(x(d.x), y(d.y));
 
-        this.showTT();
-        this.setTTPosition(x(d.x) + plotBounds.x + 10, y(d.y) + plotBounds.y + 10);
-        this.tooltip().text(d.note);
+        this.tooltip.show()
+          .setPosition(x(d.x) + plotBounds.x + 20, y(d.y) + plotBounds.y + 20)
+          .tooltip.text(d.note);
 
         event.stopPropagation();
       });
-  }
-
-  setTTPosition (x, y) {
-    this.tooltip()
-      .style('left', `${x + 10}px`)
-      .style('top', `${y + 10}px`);
   }
 
   getAverageStart (s) {
