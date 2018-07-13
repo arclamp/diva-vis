@@ -88,12 +88,13 @@ export class BurnupPlot extends Tooltip(Crosshairs(AxisChart(D3Chart(VisComponen
     this.height = 540;
 
     // Initialize Margin/D3Chart mixins.
-    this.margin({
+    this.margin.set({
       top: 20,
       right: 20,
       bottom: 40,
       left: 60
     });
+    console.log('plot', this.margin.bounds('plot'));
     this.initD3Chart();
 
     this.initTooltip({
@@ -113,7 +114,7 @@ export class BurnupPlot extends Tooltip(Crosshairs(AxisChart(D3Chart(VisComponen
     this.info = computeInfo(this.data, this.series, this.timeIndex, this.finishDate, this.goalCount);
 
     // Initialize axes.
-    const margin = this.margin();
+    const margin = this.margin.get();
 
     const x = scaleTime().domain([this.info.start, this.info.end]);
     this.bottomScale(x);
@@ -136,7 +137,7 @@ export class BurnupPlot extends Tooltip(Crosshairs(AxisChart(D3Chart(VisComponen
 
     const colormap = scaleOrdinal(schemeSet1);
 
-    const plotBounds = this.marginBounds('plot');
+    const plotBounds = this.margin.bounds('plot');
 
     const populate = (series) => {
       const seriesColor = colormap(series);
