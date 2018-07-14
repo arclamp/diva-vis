@@ -4,7 +4,7 @@ import { axisLeft, axisBottom } from 'd3-axis';
 import { scaleTime, scaleLinear, scaleOrdinal } from 'd3-scale';
 import { timeFormat } from 'd3-time-format';
 import { schemeSet1 } from 'd3-scale-chromatic';
-import { D3Chart, AxisChart, Crosshairs, Tooltip } from '@candela/d3chart';
+import { D3Chart, Axes, Crosshairs, Tooltip } from '@candela/d3chart';
 
 import { computeInfo, dateString } from './util';
 import { LinearPoints, StepPoints } from '../function';
@@ -77,7 +77,7 @@ function computeGoalPoints(data, goalCount, timeIndex, finishDate) {
   return points;
 }
 
-export class BurnupPlot extends Tooltip(Crosshairs(AxisChart(D3Chart(VisComponent)))) {
+export class BurnupPlot extends Tooltip(Crosshairs(Axes(D3Chart(VisComponent)))) {
   constructor (el, options) {
     super(el);
 
@@ -94,7 +94,7 @@ export class BurnupPlot extends Tooltip(Crosshairs(AxisChart(D3Chart(VisComponen
       bottom: 40,
       left: 60
     });
-    this.initD3Chart();
+    this.d3chart.init();
 
     this.tooltip.init({
       textAlign: 'left',
@@ -116,14 +116,14 @@ export class BurnupPlot extends Tooltip(Crosshairs(AxisChart(D3Chart(VisComponen
     const margin = this.margin.get();
 
     const x = scaleTime().domain([this.info.start, this.info.end]);
-    this.bottomScale(x);
-    this.bottomLabel('Date');
-    this.bottomAxis().tickFormat(timeFormat('%Y-%m-%d'));
-    this.renderBottomAxis();
+    this.axes.setScale('bottom', x)
+      .setLabel('bottom', 'Date')
+      .axis.bottom.tickFormat(timeFormat('%Y-%m-%d'));
+    this.axes.renderAxis('bottom');
 
     const y = scaleLinear().domain([this.info.min, this.info.max]);
-    this.leftScale(y);
-    this.leftLabel('Hours');
+    this.axes.setScale('left', y)
+      .setLabel('left', 'Hours');
 
     // Initialize crosshairs.
     this.crosshairs.init();
@@ -131,8 +131,8 @@ export class BurnupPlot extends Tooltip(Crosshairs(AxisChart(D3Chart(VisComponen
 
   render () {
     // Capture the x and y scales.
-    const x = this.bottomScale();
-    const y = this.leftScale();
+    const x = this.axes.getScale('bottom');
+    const y = this.axes.getScale('left');
 
     const colormap = scaleOrdinal(schemeSet1);
 
@@ -141,7 +141,7 @@ export class BurnupPlot extends Tooltip(Crosshairs(AxisChart(D3Chart(VisComponen
     const populate = (series) => {
       const seriesColor = colormap(series);
 
-      let me = this.plot.append('g')
+      let me = this.d3chart.plot.append('g')
         .classed('series', true);
 
       let dots = me.append('g')
@@ -204,7 +204,7 @@ export class BurnupPlot extends Tooltip(Crosshairs(AxisChart(D3Chart(VisComponen
 
     const goalPoints = computeGoalPoints(this.data, this.goalCount, this.timeIndex, this.finishDate);
 
-    const goalline = this.plot.append('g')
+    const goalline = this.d3chart.plot.append('g')
       .classed('goal', true)
       .selectAll('line')
       .data(pairUp(goalPoints))
@@ -218,7 +218,7 @@ export class BurnupPlot extends Tooltip(Crosshairs(AxisChart(D3Chart(VisComponen
       .style('stroke-width', '1px')
       .style('opacity', 0.8);
 
-    this.plot.selectAll('g.series')
+    this.d3chart.plot.selectAll('g.series')
       .data(this.series)
       .enter()
       .each(populate);
@@ -230,7 +230,7 @@ export class BurnupPlot extends Tooltip(Crosshairs(AxisChart(D3Chart(VisComponen
 
     const goalInterp = new StepPoints(goalPoints, 'x', 'y');
 
-    this.plot.on('mousemove', () => {
+    this.d3chart.plot.on('mousemove', () => {
       const mouse = this.crosshairs.mouseCoords();
       this.crosshairs.show()
         .setPosition(mouse.x, mouse.y);
@@ -243,9 +243,9 @@ export class BurnupPlot extends Tooltip(Crosshairs(AxisChart(D3Chart(VisComponen
       const evt = window.event;
 
       const mouse = this.crosshairs.mouseCoords();
-      const invertX = this.bottomScale().invert(mouse.x);
+      const invertX = this.axes.getScale('bottom').invert(mouse.x);
       const date = dateString(invertX);
-      const hours = this.leftScale().invert(mouse.y);
+      const hours = this.axes.getScale('left').invert(mouse.y);
 
       const seriesIntersections = this.series.map(s => ({color: colormap(s), value: dataInterp[s].evaluate(invertX)}));
       const goalIntersection = goalInterp.evaluate(invertX);
@@ -264,7 +264,7 @@ export class BurnupPlot extends Tooltip(Crosshairs(AxisChart(D3Chart(VisComponen
     });
 
     const noteData = collectNotes(this.data, this.timeIndex);
-    this.plot.append('g')
+    this.d3chart.plot.append('g')
       .classed('notes', true)
       .selectAll('circle')
       .data(noteData)
