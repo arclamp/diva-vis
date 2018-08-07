@@ -4,52 +4,69 @@ import { axisLeft, axisBottom } from 'd3-axis';
 import { scaleTime, scaleLinear, scaleOrdinal } from 'd3-scale';
 import { timeFormat } from 'd3-time-format';
 import { schemeSet1 } from 'd3-scale-chromatic';
-import { D3Chart, AxisChart, Crosshairs, Tooltip } from '@candela/d3chart';
+import { D3Chart, Axes, Crosshairs, Tooltip } from '@candela/d3chart';
 
 import { computeInfo, dateString } from './util';
+import { LinearPoints, StepPoints } from '../function';
 import { pairUp } from '../ProgressPlot';
 import tooltipHtml from '../tooltip.pug';
 
-function taskCounts(data, series) {
-  let counts = {};
-  series.forEach(s => {
-    const countField = `${s}_count`;
-    let curCount = data[0][s];
+function collectNotes (data, timeIndex) {
+  let notes = [];
+  data.forEach(d => {
+    for (let k in d) {
+      if (k.endsWith('_note')) {
+        const parts = k.split('_');
+        const series = parts.slice(0, -1).join('_');
 
-    counts[s] = [];
-
-    data.forEach(d => {
-      if (d[countField]) {
-        curCount = d[countField];
+        notes.push({
+          x: d[timeIndex],
+          y: d[series],
+          note: d[k]
+        });
       }
-
-      counts[s].push(curCount);
-    });
+    }
   });
 
-  return counts;
+  return notes;
 }
 
-function computeGoalPoints(data, series, timeIndex, finishDate) {
+function goalCount(data, goal) {
+  if (data[0][goal] === undefined) {
+    throw new Error('fatal: data does not include initial goal count');
+  }
+
+  let count = [];
+  let curCount;
+  data.forEach(d => {
+    if (d[goal]) {
+      curCount = d[goal];
+    }
+
+    count.push(curCount);
+  });
+
+  return count;
+}
+
+function computeGoalPoints(data, goalCount, timeIndex, finishDate) {
   let points = [];
-  let last = data[0];
+  let last = goalCount[0];
 
-  const countField = `${series}_count`;
-
-  data.forEach(c => {
+  data.forEach((c, i) => {
     points.push({
       x: c[timeIndex],
-      y: last[countField]
+      y: last
     });
 
-    if (last && last[countField] !== c[countField]) {
+    if (last !== goalCount[i]) {
       points.push({
         x: c[timeIndex],
-        y: c[countField]
+        y: goalCount[i]
       });
     }
 
-    last = c;
+    last = goalCount[i];
   });
 
   points.push({
@@ -60,76 +77,72 @@ function computeGoalPoints(data, series, timeIndex, finishDate) {
   return points;
 }
 
-function invert(data, series, counts) {
-  return data.map((d, i) => {
-    series.forEach(s => {
-      d[s] = counts[s][counts[s].length - 1] - d[s];
-      d[`${s}_count`] = counts[s][i];
-    });
-
-    return d;
-  });
-}
-
-export class BurnupPlot extends Tooltip(Crosshairs(AxisChart(D3Chart(VisComponent)))) {
+export class BurnupPlot extends Tooltip(Crosshairs(Axes(D3Chart(VisComponent)))) {
   constructor (el, options) {
     super(el);
+
+    this.averageStart = {};
 
     // Initialize InitSize mixin.
     this.width = 960;
     this.height = 540;
 
     // Initialize Margin/D3Chart mixins.
-    this.margin({
+    this.margin.set({
       top: 20,
       right: 20,
       bottom: 40,
       left: 60
     });
-    this.initD3Chart();
+    this.d3chart.init();
+
+    this.tooltip.init({
+      textAlign: 'left',
+      width: '80px',
+      height: '100px'
+    });
 
     // Compute necessary data for plot.
-    this.taskCounts = taskCounts(options.data, options.series);
-    this.data = invert(options.data, options.series, this.taskCounts);
+    this.goalCount = goalCount(options.data, options.goal);
+    this.data = options.data;
     this.timeIndex = options.timeIndex;
     this.series = Array.isArray(options.series) ? options.series : [options.series];
+    this.goal = options.goal;
     this.finishDate = options.finishDate;
 
-    this.info = computeInfo(this.data, this.series, this.timeIndex, this.finishDate, this.taskCounts);
+    this.info = computeInfo(this.data, this.series, this.timeIndex, this.finishDate, this.goalCount);
 
     // Initialize axes.
-    const margin = this.margin();
+    const margin = this.margin.get();
 
     const x = scaleTime().domain([this.info.start, this.info.end]);
-    this.bottomScale(x);
-    this.bottomAxis().tickFormat(timeFormat('%Y-%m-%d'));
-    this.renderBottomAxis();
+    this.axes.setScale('bottom', x)
+      .setLabel('bottom', 'Date')
+      .axis.bottom.tickFormat(timeFormat('%Y-%m-%d'));
+    this.axes.renderAxis('bottom');
 
     const y = scaleLinear().domain([this.info.min, this.info.max]);
-    this.leftScale(y);
+    this.axes.setScale('left', y)
+      .setLabel('left', 'Hours');
 
     // Initialize crosshairs.
-    this.initCrosshairs();
+    this.crosshairs.init();
   }
 
   render () {
     // Capture the x and y scales.
-    const x = this.bottomScale();
-    const y = this.leftScale();
-
-    // Set the data rectangle to receive mouse events.
-    this.plot.style('pointer-events', 'all');
+    const x = this.axes.getScale('bottom');
+    const y = this.axes.getScale('left');
 
     const colormap = scaleOrdinal(schemeSet1);
+
+    const plotBounds = this.margin.bounds('plot');
 
     const populate = (series) => {
       const seriesColor = colormap(series);
 
-      console.log('this.plot', this.plot);
-      let me = this.plot.append('g')
+      let me = this.d3chart.plot.append('g')
         .classed('series', true);
-
-      console.log('me', me);
 
       let dots = me.append('g')
         .classed('dots', true)
@@ -138,19 +151,12 @@ export class BurnupPlot extends Tooltip(Crosshairs(AxisChart(D3Chart(VisComponen
         .enter()
         .append('circle')
         .attr('cx', d => x(d[this.timeIndex]))
-        .attr('cy', y(0))
+        .attr('cy', d => y(d[series]))
         .attr('r', 2.5)
         .style('fill', seriesColor);
 
       const duration = 500;
       const delay = (d, i) => 50 * i;
-
-      console.log('dots', dots);
-
-      dots.transition()
-        .duration(duration)
-        .delay(delay)
-        .attr('cy', d => y(d[series]));
 
       let lines = me.append('g')
         .classed('lines', true)
@@ -160,307 +166,138 @@ export class BurnupPlot extends Tooltip(Crosshairs(AxisChart(D3Chart(VisComponen
         .append('line')
         .attr('x1', d => x(d[0][this.timeIndex]))
         .attr('y1', d => y(d[0][series]))
-        .attr('x2', d => x(d[0][this.timeIndex]))
-        .attr('y2', d => y(d[0][series]))
-        .style('opacity', 0)
-        .style('stroke', seriesColor);
-
-      lines.transition()
-        .duration(duration)
-        .delay((d, i) => duration + delay(d, i))
         .attr('x2', d => x(d[1][this.timeIndex]))
         .attr('y2', d => y(d[1][series]))
-        .style('opacity', 1);
-
-      const lastX1 = x(this.data[this.data.length - 1][this.timeIndex]);
-      const lastY1 = y(this.data[this.data.length - 1][series]);
-      const projection = me.append('line')
-        .classed('projection', true)
-        .attr('x1', lastX1)
-        .attr('y1', lastY1)
-        .attr('x2', lastX1)
-        .attr('y2', lastY1)
-        .style('stroke-dasharray', '5, 5')
-        .style('opacity', 0)
+        .style('opacity', 1)
         .style('stroke', seriesColor);
 
-      projection.transition()
-        .duration(duration)
-        .delay(2 * duration)
+      const x2 = x(this.data[this.data.length - 1][this.timeIndex]);
+      const y2 = y(this.data[this.data.length - 1][series]);
+      const y0 = y(this.goalCount[this.goalCount.length - 1]);
+      const projection = me.append('line')
+        .classed('projection', true)
+        .attr('x1', x2)
+        .attr('y1', y2)
         .attr('x2', x(this.finishDate))
-        .attr('y2', y(this.taskCounts[series][this.taskCounts[series].length - 1]))
-        .style('opacity', 1);
+        .attr('y2', y0)
+        .style('opacity', 1)
+        .style('stroke-dasharray', '5, 5')
+        .style('stroke', seriesColor);
 
-      const goalPoints = computeGoalPoints(this.data, series, this.timeIndex, this.finishDate);
+      const avgStart = this.getAverageStart(series);
+      const x1 = x(avgStart.x);
+      const y1 = y(avgStart.y);
 
-      const average = me.append('g')
-        .classed('goal', true)
-        .selectAll('line')
-        .data(pairUp(goalPoints))
-        .enter()
-        .append('line')
-        .attr('x1', d => x(d[0].x))
-        .attr('y1', d => y(d[0].y))
-        .attr('x2', d => x(d[1].x))
-        .attr('y2', d => y(d[1].y))
+      const targetX = (y0 - y1) * (x2 - x1) / (y2 - y1) + x1;
+      const average = me.append('line')
+        .classed('average', true)
+        .attr('x1', x1)
+        .attr('y1', y1)
+        .attr('x2', x1)
+        .attr('y2', y1)
+        .attr('x2', targetX)
+        .attr('y2', y0)
+        .style('stroke-dasharray', '2, 2')
         .style('stroke', seriesColor)
-        .style('opacity', 0.5);
+        .style('opacity', 1);
     };
 
-    this.plot.selectAll('g.series')
+    const goalPoints = computeGoalPoints(this.data, this.goalCount, this.timeIndex, this.finishDate);
+
+    const goalline = this.d3chart.plot.append('g')
+      .classed('goal', true)
+      .selectAll('line')
+      .data(pairUp(goalPoints))
+      .enter()
+      .append('line')
+      .attr('x1', d => x(d[0].x))
+      .attr('y1', d => y(d[0].y))
+      .attr('x2', d => x(d[1].x))
+      .attr('y2', d => y(d[1].y))
+      .style('stroke', 'black')
+      .style('stroke-width', '1px')
+      .style('opacity', 0.8);
+
+    this.d3chart.plot.selectAll('g.series')
       .data(this.series)
       .enter()
       .each(populate);
 
-    this.on('crosshairs.move', evt => {
-      const mouse = this.mouseCoords();
-      const date = dateString(this.bottomScale().invert(mouse.x));
-      const numTasks = Math.floor(this.leftScale().invert(mouse.y));
+    let dataInterp = {};
+    this.series.forEach(s => {
+      dataInterp[s] = new LinearPoints(this.data.map(d => ({x: d[this.timeIndex], y: d[s]})), 'x', 'y');
+    });
 
-      const tt = this.tooltip();
-      tt.style('left', `${evt.pageX + 5}px`)
-        .style('top', `${evt.pageY - 39}px`)
-        .html(tooltipHtml({
+    const goalInterp = new StepPoints(goalPoints, 'x', 'y');
+
+    this.d3chart.plot.on('mousemove', () => {
+      const mouse = this.crosshairs.mouseCoords();
+      this.crosshairs.show()
+        .setPosition(mouse.x, mouse.y);
+
+      this.tooltip.show()
+        .setPosition(event.pageX + 10, event.pageY + 10);
+    });
+
+    this.crosshairs.target.on('mousemove.tooltip', () => {
+      const evt = window.event;
+
+      const mouse = this.crosshairs.mouseCoords();
+      const invertX = this.axes.getScale('bottom').invert(mouse.x);
+      const date = dateString(invertX);
+      const hours = this.axes.getScale('left').invert(mouse.y);
+
+      const seriesIntersections = this.series.map(s => ({color: colormap(s), value: dataInterp[s].evaluate(invertX)}));
+      const goalIntersection = goalInterp.evaluate(invertX);
+
+      this.tooltip.setPosition(window.event.pageX + 10, window.event.pageY + 10);
+      this.tooltip.tooltip.html(tooltipHtml({
           date,
-          numTasks
+          hours,
+          seriesIntersections,
+          goalIntersection
         }));
-
-      tt.transition()
-        .duration(200)
-        .style('opacity', 1.0);
     });
 
-    this.on('crosshairs.out', () => {
-      this.tooltip().transition()
-        .duration(200)
-        .style('opacity', 0.0);
+    this.crosshairs.target.on('mouseout.tooltip', () => {
+      this.tooltip.hide();
     });
-  }
-}
 
-export class BurnupPlotOld extends VisComponent {
-  constructor (el, options) {
-    super(el);
-
-    this.margin = {
-      top: 20,
-      right: 20,
-      bottom: 40,
-      left: 60
-    };
-    this.visWidth = 960;
-    this.visHeight = 540;
-
-    this.width = this.visWidth - this.margin.left - this.margin.right;
-    this.height = this.visHeight - this.margin.top - this.margin.bottom;
-
-    this.taskCounts = taskCounts(options.data, options.series);
-    this.data = invert(options.data, options.series, this.taskCounts);
-    this.timeIndex = options.timeIndex;
-    this.series = Array.isArray(options.series) ? options.series : [options.series];
-    this.finishDate = options.finishDate;
-
-    this.info = computeInfo(this.data, this.series, this.timeIndex, this.finishDate, this.taskCounts);
-
-    this.svg = select(this.el)
-      .append('svg')
-      .attr('xmlns', 'http://www.w3.org/2000/svg')
-      .attr('width', this.visWidth)
-      .attr('height', this.visHeight);
-
-    this.tooltipOptions = {
-      width: 80,
-      height: 30
-    };
-
-    this.tooltip = select(this.el)
-      .append('div')
-      .style('opacity', 0)
-      .style('position', 'absolute')
-      .style('text-align', 'center')
-      .style('width', `${this.tooltipOptions.width}px`)
-      .style('height', `${this.tooltipOptions.height}px`)
-      .style('padding', '2px')
-      .style('font', '12px sans-serif')
-      .style('background', 'lightgreen')
-      .style('border', '0px')
-      .style('border-radius', '8px')
-      .style('pointer-events', 'none');
-  }
-
-  render () {
-    const x = scaleTime()
-      .domain([this.info.start, this.info.end])
-      .range([0, this.width]);
-
-    const y = scaleLinear()
-      .domain([this.info.min, this.info.max])
-      .range([this.height, 0]);
-
-    const g = this.svg.append('g')
-      .classed('vis', true)
-      .attr('transform', `translate(${this.margin.left},${this.margin.top})`);
-
-    g.append('g')
-      .classed('axis', true)
-      .classed('x-axis', true)
-      .attr('transform', `translate(0,${this.height})`)
-      .call(axisBottom(x).tickFormat(timeFormat('%Y-%m-%d')));
-
-    g.append('g')
-      .classed('axis', true)
-      .classed('y-axis', true)
-      .call(axisLeft(y));
-
-    const dr = g.append('g')
-      .classed('data-rectangle', true)
-      .style('pointer-events', 'all');
-
-    let crosshair = dr.append('g')
-      .classed('crosshair', true);
-    crosshair.append('line')
-      .classed('crosshair-x', true)
-      .style('opacity', 0)
-      .style('stroke', 'lightgray')
-      .attr('x1', x.range()[0])
-      .attr('x2', x.range()[1]);
-    crosshair.append('line')
-      .classed('crosshair-y', true)
-      .style('opacity', 0)
-      .style('stroke', 'lightgray')
-      .attr('y1', y.range()[0])
-      .attr('y2', y.range()[1]);
-
-    const colormap = scaleOrdinal(schemeSet1);
-
-    const populate = (series) => {
-      const seriesColor = colormap(series);
-
-      let me = dr.append('g')
-        .classed('series', true);
-
-      let dots = me.append('g')
-        .classed('dots', true)
-        .selectAll('circle')
-        .data(this.data)
-        .enter()
-        .append('circle')
-        .attr('cx', d => x(d[this.timeIndex]))
-        .attr('cy', y(0))
-        .attr('r', 2.5)
-        .style('fill', seriesColor);
-
-      const duration = 500;
-      const delay = (d, i) => 50 * i;
-
-      dots.transition()
-        .duration(duration)
-        .delay(delay)
-        .attr('cy', d => y(d[series]));
-
-      let lines = me.append('g')
-        .classed('lines', true)
-        .selectAll('line')
-        .data(pairUp(this.data))
-        .enter()
-        .append('line')
-        .attr('x1', d => x(d[0][this.timeIndex]))
-        .attr('y1', d => y(d[0][series]))
-        .attr('x2', d => x(d[0][this.timeIndex]))
-        .attr('y2', d => y(d[0][series]))
-        .style('opacity', 0)
-        .style('stroke', seriesColor);
-
-      lines.transition()
-        .duration(duration)
-        .delay((d, i) => duration + delay(d, i))
-        .attr('x2', d => x(d[1][this.timeIndex]))
-        .attr('y2', d => y(d[1][series]))
-        .style('opacity', 1);
-
-      const lastX1 = x(this.data[this.data.length - 1][this.timeIndex]);
-      const lastY1 = y(this.data[this.data.length - 1][series]);
-      const projection = me.append('line')
-        .classed('projection', true)
-        .attr('x1', lastX1)
-        .attr('y1', lastY1)
-        .attr('x2', lastX1)
-        .attr('y2', lastY1)
-        .style('stroke-dasharray', '5, 5')
-        .style('opacity', 0)
-        .style('stroke', seriesColor);
-
-      projection.transition()
-        .duration(duration)
-        .delay(2 * duration)
-        .attr('x2', x(this.finishDate))
-        .attr('y2', y(this.taskCounts[series][this.taskCounts[series].length - 1]))
-        .style('opacity', 1);
-
-      const goalPoints = computeGoalPoints(this.data, series, this.timeIndex, this.finishDate);
-
-      const average = me.append('g')
-        .classed('goal', true)
-        .selectAll('line')
-        .data(pairUp(goalPoints))
-        .enter()
-        .append('line')
-        .attr('x1', d => x(d[0].x))
-        .attr('y1', d => y(d[0].y))
-        .attr('x2', d => x(d[1].x))
-        .attr('y2', d => y(d[1].y))
-        .style('stroke', seriesColor)
-        .style('opacity', 0.5);
-    };
-
-    dr.selectAll('g.series')
-      .data(this.series)
+    const noteData = collectNotes(this.data, this.timeIndex);
+    this.d3chart.plot.append('g')
+      .classed('notes', true)
+      .selectAll('circle')
+      .data(noteData)
       .enter()
-      .each(populate);
+      .append('circle')
+      .attr('cx', d => x(d.x))
+      .attr('cy', d => y(d.y))
+      .attr('r', 5)
+      .style('fill', 'gray')
+      .on('mousemove.note', d => {
+        this.crosshairs.show()
+          .setPosition(x(d.x), y(d.y));
 
-    dr.append('rect')
-      .classed('target', true)
-      .attr('width', this.width)
-      .attr('height', this.height)
-      .style('opacity', 0.0)
-      .on('mousemove', () => {
-        const bbox = event.srcElement.getBoundingClientRect();
-        const mouseX = event.clientX - bbox.left;
-        const mouseY = event.clientY - bbox.top;
+        this.tooltip.show()
+          .setPosition(x(d.x) + plotBounds.x + 20, y(d.y) + plotBounds.y + 20)
+          .tooltip.text(d.note);
 
-        crosshair.select('.crosshair-x')
-          .style('opacity', 1)
-          .attr('y1', mouseY)
-          .attr('y2', mouseY);
-
-        crosshair.select('.crosshair-y')
-          .style('opacity', 1)
-          .attr('x1', mouseX)
-          .attr('x2', mouseX);
-
-        const date = dateString(x.invert(mouseX));
-        const numTasks = Math.floor(y.invert(mouseY));
-
-        this.tooltip
-          .style('left', `${event.pageX + 5}px`)
-          .style('top', `${event.pageY - this.tooltipOptions.height - 9}px`)
-          .html(tooltipHtml({
-            date,
-            numTasks
-          }));
-
-        this.tooltip.transition()
-          .duration(200)
-          .style('opacity', 0.9);
-      })
-      .on('mouseout', () => {
-        crosshair.selectAll('line')
-          .style('opacity', 0);
-
-        this.tooltip.transition()
-          .duration(200)
-          .style('opacity', 0.0);
+        event.stopPropagation();
       });
+  }
 
+  getAverageStart (s) {
+    if (!this.averageStart.hasOwnProperty(s)) {
+      this.averageStart[s] = {
+        x: this.data[0][this.timeIndex],
+        y: this.data[0][s]
+      };
+    }
+
+    return this.averageStart[s];
+  }
+
+  setAverageStart (s, {x, y}) {
+    this.averageStart[s] = {x, y};
   }
 }

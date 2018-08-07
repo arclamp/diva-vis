@@ -68,8 +68,6 @@ function progress (data) {
   const diva = data.filter(d => d.Project === 'DIVA');
   const classes = partition(diva, d => d.Status);
 
-  console.log(classes);
-
   const closedFrames = fieldSum(classes.closed, 'Frames');
   const closedAnnTime = fieldSum(classes.closed, 'Annotation Time (/spend)');
   const closedAuditTime = fieldSum(classes.closed, 'Audit Time (/estimate)');
@@ -176,6 +174,7 @@ function burndownPlot (config) {
 
 function burnupPlot (config) {
   let v = new BurnupPlot(document.body.appendChild(document.createElement('div')), config);
+  v.setAverageStart('a', {x: new Date('2018-06-02'), y: 8});
   v.render();
 
   return v;
@@ -236,7 +235,7 @@ const progressData = progress(data);
   // size: 250
 // });
 
-const burnConfig = {
+const burndownConfig = {
   data: [
     {t: new Date('2018-06-01T00:00:00'), a: 100 / 4, b: 51},
     {t: new Date('2018-06-02T00:00:00'), a: 90 / 4, b: 41},
@@ -249,6 +248,20 @@ const burnConfig = {
   series: ['a', 'b'],
   finishDate: new Date('2018-06-10')
 };
-
 // burndownPlot(burnConfig);
-burnupPlot(burnConfig);
+
+const burnupConfig = {
+  data: [
+    {t: new Date('2018-06-01T00:00:00'), a: 0, b: 0, goal: 51},
+    {t: new Date('2018-06-02T00:00:00'), a: 2, a_note: "I don't have to show you any stinking badges.", b: 38},
+    {t: new Date('2018-06-03T00:00:00'), a: 2, b: 42, goal: 60, goal_note: "Forget it Jake. It's Chinatown"},
+    {t: new Date('2018-06-04T00:00:00'), a: 4, b: 48},
+    {t: new Date('2018-06-05T00:00:00'), a: 15, a_note: "No. *I* am your father!", b: 49, b_note: "They call me MISTER Tibbs!", goal: 80},
+    {t: new Date('2018-06-06T00:00:00'), a: 17, b: 58}
+  ],
+  timeIndex: 't',
+  series: ['a', 'b'],
+  goal: 'goal',
+  finishDate: new Date('2018-06-10')
+};
+burnupPlot(burnupConfig);
